@@ -1,0 +1,4 @@
+project_id = "zugobdvcrdxkoikelmhg"
+
+[functions.analyze-crop-disease]
+verify_jwt = false

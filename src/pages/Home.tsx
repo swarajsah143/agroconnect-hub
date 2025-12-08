@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Sprout, Users, ShoppingCart, GraduationCap, TrendingUp, Shield } from 'lucide-react';
+import { Sprout, Users, ShoppingCart, GraduationCap, TrendingUp, Shield, ArrowRight, Leaf, Zap } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 
 const Home = () => {
@@ -12,70 +12,150 @@ const Home = () => {
       <Navbar />
 
       {/* Hero Section */}
-      <section className="relative py-20 md:py-32 bg-gradient-to-br from-primary/5 via-background to-accent/5">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto text-center space-y-6">
-            <h1 className="text-4xl md:text-6xl font-serif font-bold text-foreground leading-tight">
-              Connecting Farmers, Buyers & Agricultural Experts
+      <section className="relative py-24 md:py-36 overflow-hidden">
+        {/* Background effects */}
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5" />
+        <div className="absolute top-20 left-10 w-72 h-72 bg-primary/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-20 right-10 w-96 h-96 bg-accent/10 rounded-full blur-3xl" />
+        
+        <div className="container mx-auto px-4 relative">
+          <div className="max-w-4xl mx-auto text-center space-y-8">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-medium animate-fadeInUp">
+              <Leaf className="w-4 h-4" />
+              Empowering Agriculture
+            </div>
+            
+            <h1 className="text-4xl md:text-6xl lg:text-7xl font-serif font-bold text-foreground leading-tight animate-fadeInUp delay-100">
+              Connecting <span className="gradient-text">Farmers</span>, Buyers & 
+              <span className="gradient-text"> Experts</span>
             </h1>
-            <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
+            
+            <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto animate-fadeInUp delay-200">
               AgroConnect brings together the agricultural community in one modern, trusted marketplace platform
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center pt-6">
-              <Button size="lg" onClick={() => navigate('/auth?mode=register')} className="text-lg px-8">
+            
+            <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4 animate-fadeInUp delay-300">
+              <Button 
+                size="lg" 
+                onClick={() => navigate('/auth?mode=register')} 
+                className="text-lg px-8 h-14 shimmer group"
+              >
                 Get Started
+                <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Button>
-              <Button size="lg" variant="outline" onClick={() => navigate('/marketplace')} className="text-lg px-8">
+              <Button 
+                size="lg" 
+                variant="outline" 
+                onClick={() => navigate('/marketplace')} 
+                className="text-lg px-8 h-14 hover-glow border-primary/30 hover:border-primary/60"
+              >
                 Browse Marketplace
               </Button>
+            </div>
+
+            {/* Stats */}
+            <div className="grid grid-cols-3 gap-8 pt-12 max-w-lg mx-auto animate-fadeInUp delay-400">
+              <div className="text-center">
+                <div className="text-3xl md:text-4xl font-bold gradient-text">500+</div>
+                <div className="text-sm text-muted-foreground mt-1">Farmers</div>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl md:text-4xl font-bold gradient-text">1K+</div>
+                <div className="text-sm text-muted-foreground mt-1">Products</div>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl md:text-4xl font-bold gradient-text">50+</div>
+                <div className="text-sm text-muted-foreground mt-1">Experts</div>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
       {/* Role Cards Section */}
-      <section className="py-20 bg-secondary/30">
-        <div className="container mx-auto px-4">
-          <h2 className="text-3xl md:text-4xl font-serif font-bold text-center mb-12">
-            Choose Your Role
-          </h2>
+      <section className="py-24 relative">
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-secondary/30 to-transparent" />
+        
+        <div className="container mx-auto px-4 relative">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-5xl font-serif font-bold mb-4">
+              Choose Your <span className="gradient-text">Role</span>
+            </h2>
+            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+              Join the platform that fits your needs and start connecting today
+            </p>
+          </div>
+          
           <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('/auth?role=farmer')}>
-              <CardContent className="p-8 text-center space-y-4">
-                <div className="w-16 h-16 mx-auto bg-primary/10 rounded-full flex items-center justify-center">
-                  <Sprout className="w-8 h-8 text-primary" />
+            <Card 
+              className="hover-lift cursor-pointer group bg-card/50 backdrop-blur border-border/50" 
+              onClick={() => navigate('/auth?role=farmer')}
+            >
+              <CardContent className="p-8 text-center space-y-6">
+                <div className="w-20 h-20 mx-auto bg-gradient-to-br from-primary/20 to-primary/5 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                  <Sprout className="w-10 h-10 text-primary" />
                 </div>
-                <h3 className="text-2xl font-serif font-bold">Farmer</h3>
-                <p className="text-muted-foreground">
-                  List your crops, manage inventory, and connect directly with buyers
-                </p>
-                <Button variant="outline" className="w-full">Join as Farmer</Button>
+                <div>
+                  <h3 className="text-2xl font-serif font-bold mb-2">Farmer</h3>
+                  <p className="text-muted-foreground">
+                    List your crops, manage inventory, and connect directly with buyers
+                  </p>
+                </div>
+                <Button 
+                  variant="outline" 
+                  className="w-full group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary transition-all duration-300"
+                >
+                  Join as Farmer
+                  <ArrowRight className="ml-2 w-4 h-4" />
+                </Button>
               </CardContent>
             </Card>
 
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('/auth?role=buyer')}>
-              <CardContent className="p-8 text-center space-y-4">
-                <div className="w-16 h-16 mx-auto bg-primary/10 rounded-full flex items-center justify-center">
-                  <ShoppingCart className="w-8 h-8 text-primary" />
+            <Card 
+              className="hover-lift cursor-pointer group bg-card/50 backdrop-blur border-border/50" 
+              onClick={() => navigate('/auth?role=buyer')}
+            >
+              <CardContent className="p-8 text-center space-y-6">
+                <div className="w-20 h-20 mx-auto bg-gradient-to-br from-accent/20 to-accent/5 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                  <ShoppingCart className="w-10 h-10 text-accent" />
                 </div>
-                <h3 className="text-2xl font-serif font-bold">Buyer</h3>
-                <p className="text-muted-foreground">
-                  Browse fresh produce, compare prices, and buy directly from farmers
-                </p>
-                <Button variant="outline" className="w-full">Join as Buyer</Button>
+                <div>
+                  <h3 className="text-2xl font-serif font-bold mb-2">Buyer</h3>
+                  <p className="text-muted-foreground">
+                    Browse fresh produce, compare prices, and buy directly from farmers
+                  </p>
+                </div>
+                <Button 
+                  variant="outline" 
+                  className="w-full group-hover:bg-accent group-hover:text-accent-foreground group-hover:border-accent transition-all duration-300"
+                >
+                  Join as Buyer
+                  <ArrowRight className="ml-2 w-4 h-4" />
+                </Button>
               </CardContent>
             </Card>
 
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('/auth?role=expert')}>
-              <CardContent className="p-8 text-center space-y-4">
-                <div className="w-16 h-16 mx-auto bg-primary/10 rounded-full flex items-center justify-center">
-                  <GraduationCap className="w-8 h-8 text-primary" />
+            <Card 
+              className="hover-lift cursor-pointer group bg-card/50 backdrop-blur border-border/50" 
+              onClick={() => navigate('/auth?role=expert')}
+            >
+              <CardContent className="p-8 text-center space-y-6">
+                <div className="w-20 h-20 mx-auto bg-gradient-to-br from-primary/20 to-accent/10 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                  <GraduationCap className="w-10 h-10 text-primary" />
                 </div>
-                <h3 className="text-2xl font-serif font-bold">Expert</h3>
-                <p className="text-muted-foreground">
-                  Share knowledge, answer questions, and help farmers succeed
-                </p>
-                <Button variant="outline" className="w-full">Join as Expert</Button>
+                <div>
+                  <h3 className="text-2xl font-serif font-bold mb-2">Expert</h3>
+                  <p className="text-muted-foreground">
+                    Share knowledge, answer questions, and help farmers succeed
+                  </p>
+                </div>
+                <Button 
+                  variant="outline" 
+                  className="w-full group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary transition-all duration-300"
+                >
+                  Join as Expert
+                  <ArrowRight className="ml-2 w-4 h-4" />
+                </Button>
               </CardContent>
             </Card>
           </div>
@@ -83,37 +163,45 @@ const Home = () => {
       </section>
 
       {/* Features Section */}
-      <section className="py-20">
+      <section className="py-24">
         <div className="container mx-auto px-4">
-          <h2 className="text-3xl md:text-4xl font-serif font-bold text-center mb-12">
-            Why Choose AgroConnect?
-          </h2>
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            <div className="text-center space-y-3">
-              <div className="w-12 h-12 mx-auto bg-accent/20 rounded-full flex items-center justify-center">
-                <Users className="w-6 h-6 text-accent" />
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-5xl font-serif font-bold mb-4">
+              Why Choose <span className="gradient-text">AgroConnect</span>?
+            </h2>
+            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+              Built with modern technology to empower the agricultural community
+            </p>
+          </div>
+          
+          <div className="grid md:grid-cols-3 gap-12 max-w-5xl mx-auto">
+            <div className="text-center space-y-4 group">
+              <div className="w-16 h-16 mx-auto bg-gradient-to-br from-primary/20 to-transparent rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                <Users className="w-8 h-8 text-primary" />
               </div>
-              <h3 className="text-xl font-semibold">Direct Connection</h3>
+              <h3 className="text-xl font-bold">Direct Connection</h3>
               <p className="text-muted-foreground">
-                No middlemen. Connect farmers directly with buyers for fair prices
+                No middlemen. Connect farmers directly with buyers for fair prices and transparent deals
               </p>
             </div>
-            <div className="text-center space-y-3">
-              <div className="w-12 h-12 mx-auto bg-accent/20 rounded-full flex items-center justify-center">
-                <Shield className="w-6 h-6 text-accent" />
+            
+            <div className="text-center space-y-4 group">
+              <div className="w-16 h-16 mx-auto bg-gradient-to-br from-accent/20 to-transparent rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                <Shield className="w-8 h-8 text-accent" />
               </div>
-              <h3 className="text-xl font-semibold">Trusted Platform</h3>
+              <h3 className="text-xl font-bold">Trusted Platform</h3>
               <p className="text-muted-foreground">
-                Verified users and secure transactions for peace of mind
+                Verified users and secure transactions for complete peace of mind
               </p>
             </div>
-            <div className="text-center space-y-3">
-              <div className="w-12 h-12 mx-auto bg-accent/20 rounded-full flex items-center justify-center">
-                <TrendingUp className="w-6 h-6 text-accent" />
+            
+            <div className="text-center space-y-4 group">
+              <div className="w-16 h-16 mx-auto bg-gradient-to-br from-primary/20 to-accent/10 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                <TrendingUp className="w-8 h-8 text-primary" />
               </div>
-              <h3 className="text-xl font-semibold">Expert Guidance</h3>
+              <h3 className="text-xl font-bold">Expert Guidance</h3>
               <p className="text-muted-foreground">
-                Access agricultural expertise to improve yields and profits
+                Access agricultural expertise to improve yields and maximize profits
               </p>
             </div>
           </div>
@@ -121,24 +209,53 @@ const Home = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-primary text-primary-foreground">
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl md:text-4xl font-serif font-bold mb-6">
-            Ready to Transform Agriculture?
-          </h2>
-          <p className="text-lg mb-8 max-w-2xl mx-auto opacity-90">
-            Join thousands of farmers, buyers, and experts already using AgroConnect
-          </p>
-          <Button size="lg" variant="secondary" onClick={() => navigate('/auth?mode=register')} className="text-lg px-8">
-            Create Your Account
-          </Button>
+      <section className="py-24 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/90 to-primary" />
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIj48cGF0aCBkPSJNMzYgMzRjMC0yLjIxLTEuNzktNC00LTRzLTQgMS43OS00IDQgMS43OSA0IDQgNCA0LTEuNzkgNC00eiIvPjwvZz48L2c+PC9zdmc+')] opacity-30" />
+        
+        <div className="container mx-auto px-4 relative">
+          <div className="max-w-3xl mx-auto text-center">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 border border-white/20 text-white/90 text-sm font-medium mb-6">
+              <Zap className="w-4 h-4" />
+              Join 1000+ users already on the platform
+            </div>
+            
+            <h2 className="text-3xl md:text-5xl font-serif font-bold mb-6 text-primary-foreground">
+              Ready to Transform Agriculture?
+            </h2>
+            <p className="text-lg mb-8 text-primary-foreground/80 max-w-xl mx-auto">
+              Join thousands of farmers, buyers, and experts already using AgroConnect to grow their business
+            </p>
+            <Button 
+              size="lg" 
+              variant="secondary" 
+              onClick={() => navigate('/auth?mode=register')} 
+              className="text-lg px-8 h-14 hover:scale-105 transition-transform duration-300"
+            >
+              Create Your Free Account
+              <ArrowRight className="ml-2 w-5 h-5" />
+            </Button>
+          </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="py-8 border-t border-border">
-        <div className="container mx-auto px-4 text-center text-muted-foreground">
-          <p>&copy; 2024 AgroConnect. All rights reserved.</p>
+      <footer className="py-12 border-t border-border/50 bg-card/30">
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <Sprout className="w-5 h-5 text-primary" />
+              <span className="font-serif font-bold gradient-text">AgroConnect</span>
+            </div>
+            <p className="text-muted-foreground text-sm">
+              &copy; 2024 AgroConnect. All rights reserved.
+            </p>
+            <div className="flex items-center gap-6">
+              <a href="#" className="text-muted-foreground hover:text-foreground link-underline text-sm py-1">Privacy</a>
+              <a href="#" className="text-muted-foreground hover:text-foreground link-underline text-sm py-1">Terms</a>
+              <a href="#" className="text-muted-foreground hover:text-foreground link-underline text-sm py-1">Contact</a>
+            </div>
+          </div>
         </div>
       </footer>
     </div>

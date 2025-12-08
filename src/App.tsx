@@ -11,6 +11,7 @@ import About from "./pages/About";
 import FarmerDashboard from "./pages/FarmerDashboard";
 import BuyerDashboard from "./pages/BuyerDashboard";
 import ExpertDashboard from "./pages/ExpertDashboard";
+import CropDiseasePrediction from "./pages/CropDiseasePrediction";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +31,7 @@ const App = () => (
             <Route path="/farmer-dashboard" element={<FarmerDashboard />} />
             <Route path="/buyer-dashboard" element={<BuyerDashboard />} />
             <Route path="/expert-dashboard" element={<ExpertDashboard />} />
+            <Route path="/crop-disease" element={<CropDiseasePrediction />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Sprout, Users, ShoppingCart, GraduationCap, TrendingUp, Shield, ArrowRight, Leaf, Zap } from 'lucide-react';
+import { Sprout, Users, ShoppingCart, GraduationCap, TrendingUp, Shield, ArrowRight, Leaf, Zap, Bug } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 
 const Home = () => {
@@ -46,10 +46,11 @@ const Home = () => {
               <Button 
                 size="lg" 
                 variant="outline" 
-                onClick={() => navigate('/marketplace')} 
-                className="text-lg px-8 h-14 hover-glow border-primary/30 hover:border-primary/60"
+                onClick={() => navigate('/crop-disease')} 
+                className="text-lg px-8 h-14 hover-glow border-primary/30 hover:border-primary/60 group"
               >
-                Browse Marketplace
+                <Bug className="mr-2 w-5 h-5 group-hover:scale-110 transition-transform" />
+                AI Disease Detection
               </Button>
             </div>
 

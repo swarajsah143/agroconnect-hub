@@ -3,12 +3,21 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Target, Eye, Users } from 'lucide-react';
 
 const About = () => {
+  const teamMembers = [
+    { name: 'Swaraj', role: 'Founder & CEO', bg: 'from-primary/20 to-primary/5' },
+    { name: 'Asim', role: 'Chief Technology Officer', bg: 'from-accent/20 to-accent/5' },
+    { name: 'Abhishek', role: 'Head of Agriculture', bg: 'from-secondary/40 to-secondary/10' },
+    { name: 'Kartik', role: 'Head of Operations', bg: 'from-primary/20 to-primary/5' },
+    { name: 'Dipendra', role: 'Head of Marketing', bg: 'from-accent/20 to-accent/5' },
+    { name: 'Manish', role: 'Head of Product', bg: 'from-secondary/40 to-secondary/10' }
+  ];
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
 
       <div className="container mx-auto px-4 py-12">
-        <div className="max-w-4xl mx-auto space-y-12">
+        <div className="max-w-5xl mx-auto space-y-12">
           {/* Hero */}
           <div className="text-center space-y-4">
             <h1 className="text-4xl md:text-5xl font-serif font-bold">About AgroConnect</h1>
@@ -89,19 +98,16 @@ const About = () => {
               AgroConnect is built by a passionate team of agricultural experts, technologists, and entrepreneurs 
               committed to transforming India's agricultural landscape.
             </p>
-            <div className="grid md:grid-cols-4 gap-6 pt-6">
-              {[
-                { name: 'Rajesh Kumar', role: 'Founder & CEO', bg: 'from-primary/20 to-primary/5' },
-                { name: 'Priya Singh', role: 'Chief Technology Officer', bg: 'from-accent/20 to-accent/5' },
-                { name: 'Amit Sharma', role: 'Head of Agriculture', bg: 'from-secondary/40 to-secondary/10' },
-                { name: 'Sneha Patel', role: 'Head of Operations', bg: 'from-primary/20 to-primary/5' }
-              ].map((member) => (
+            <div className="grid md:grid-cols-3 lg:grid-cols-6 gap-6 pt-6">
+              {teamMembers.map((member) => (
                 <Card key={member.name}>
                   <CardContent className="p-6 text-center space-y-3">
-                    <div className={`w-20 h-20 mx-auto rounded-full bg-gradient-to-br ${member.bg}`} />
+                    <div className={`w-20 h-20 mx-auto rounded-full bg-gradient-to-br ${member.bg} flex items-center justify-center`}>
+                      <span className="text-2xl font-bold text-primary">{member.name.charAt(0)}</span>
+                    </div>
                     <div>
                       <h3 className="font-semibold">{member.name}</h3>
-                      <p className="text-sm text-muted-foreground">{member.role}</p>
+                      <p className="text-xs text-muted-foreground">{member.role}</p>
                     </div>
                   </CardContent>
                 </Card>

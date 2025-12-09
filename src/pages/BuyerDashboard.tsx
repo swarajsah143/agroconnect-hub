@@ -6,16 +6,25 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { mockCrops } from '@/data/mockData';
 import { ShoppingCart, MessageCircle, TrendingUp, Package } from 'lucide-react';
+import NegotiationsList from '@/components/bargaining/NegotiationsList';
 
 const BuyerDashboard = () => {
-  const { user } = useAuth();
+  const { user, profile, loading } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!user || user.role !== 'buyer') {
+    if (!loading && (!user || profile?.role !== 'buyer')) {
       navigate('/auth?role=buyer');
     }
-  }, [user, navigate]);
+  }, [user, profile, loading, navigate]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -24,7 +33,7 @@ const BuyerDashboard = () => {
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-4xl font-serif font-bold mb-2">Buyer Dashboard</h1>
-          <p className="text-muted-foreground">Welcome back, {user?.name}!</p>
+          <p className="text-muted-foreground">Welcome back, {profile?.name}!</p>
         </div>
 
         {/* Stats */}
@@ -142,6 +151,19 @@ const BuyerDashboard = () => {
                 </div>
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Negotiations */}
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <MessageCircle className="w-5 h-5" />
+              My Negotiations
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <NegotiationsList />
           </CardContent>
         </Card>
 

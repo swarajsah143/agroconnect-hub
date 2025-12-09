@@ -1,83 +1,158 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { User, Session } from '@supabase/supabase-js';
 
 export type UserRole = 'farmer' | 'buyer' | 'expert';
 
-export interface User {
+export interface UserProfile {
   id: string;
-  email: string;
+  user_id: string;
   name: string;
   role: UserRole;
 }
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string, role: UserRole) => Promise<boolean>;
-  register: (email: string, password: string, name: string, role: UserRole) => Promise<boolean>;
-  logout: () => void;
+  session: Session | null;
+  profile: UserProfile | null;
+  login: (email: string, password: string, role: UserRole) => Promise<{ success: boolean; error?: string }>;
+  register: (email: string, password: string, name: string, role: UserRole) => Promise<{ success: boolean; error?: string }>;
+  logout: () => Promise<void>;
   isAuthenticated: boolean;
+  loading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const fetchProfile = async (userId: string) => {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('user_id', userId)
+      .single();
+    
+    if (data && !error) {
+      setProfile(data as UserProfile);
+    }
+    return data as UserProfile | null;
+  };
 
   useEffect(() => {
-    // Check for existing session
-    const storedUser = localStorage.getItem('agroconnect_user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
+    // Set up auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        // Defer profile fetch to avoid deadlock
+        if (session?.user) {
+          setTimeout(() => {
+            fetchProfile(session.user.id);
+          }, 0);
+        } else {
+          setProfile(null);
+        }
+        
+        setLoading(false);
+      }
+    );
+
+    // THEN check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      
+      if (session?.user) {
+        fetchProfile(session.user.id);
+      }
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  const register = async (email: string, password: string, name: string, role: UserRole): Promise<boolean> => {
-    // Mock registration - in production, this would call an API
-    const users = JSON.parse(localStorage.getItem('agroconnect_users') || '[]');
+  const register = async (email: string, password: string, name: string, role: UserRole): Promise<{ success: boolean; error?: string }> => {
+    const redirectUrl = `${window.location.origin}/`;
     
-    if (users.find((u: any) => u.email === email)) {
-      return false; // User already exists
-    }
-
-    const newUser = {
-      id: Math.random().toString(36).substr(2, 9),
+    const { data, error } = await supabase.auth.signUp({
       email,
-      name,
-      role,
-      password // In production, never store plain passwords!
-    };
+      password,
+      options: {
+        emailRedirectTo: redirectUrl
+      }
+    });
 
-    users.push(newUser);
-    localStorage.setItem('agroconnect_users', JSON.stringify(users));
-
-    const userWithoutPassword = { id: newUser.id, email: newUser.email, name: newUser.name, role: newUser.role };
-    setUser(userWithoutPassword);
-    localStorage.setItem('agroconnect_user', JSON.stringify(userWithoutPassword));
-    
-    return true;
-  };
-
-  const login = async (email: string, password: string, role: UserRole): Promise<boolean> => {
-    // Mock login - in production, this would call an API
-    const users = JSON.parse(localStorage.getItem('agroconnect_users') || '[]');
-    const foundUser = users.find((u: any) => u.email === email && u.password === password && u.role === role);
-
-    if (foundUser) {
-      const userWithoutPassword = { id: foundUser.id, email: foundUser.email, name: foundUser.name, role: foundUser.role };
-      setUser(userWithoutPassword);
-      localStorage.setItem('agroconnect_user', JSON.stringify(userWithoutPassword));
-      return true;
+    if (error) {
+      return { success: false, error: error.message };
     }
 
-    return false;
+    if (data.user) {
+      // Create profile
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert({
+          user_id: data.user.id,
+          name,
+          role
+        });
+
+      if (profileError) {
+        return { success: false, error: profileError.message };
+      }
+      
+      await fetchProfile(data.user.id);
+    }
+
+    return { success: true };
   };
 
-  const logout = () => {
+  const login = async (email: string, password: string, role: UserRole): Promise<{ success: boolean; error?: string }> => {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    });
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    if (data.user) {
+      const profileData = await fetchProfile(data.user.id);
+      
+      // Verify role matches
+      if (profileData && profileData.role !== role) {
+        await supabase.auth.signOut();
+        return { success: false, error: `This account is registered as a ${profileData.role}, not a ${role}.` };
+      }
+    }
+
+    return { success: true };
+  };
+
+  const logout = async () => {
+    await supabase.auth.signOut();
     setUser(null);
-    localStorage.removeItem('agroconnect_user');
+    setSession(null);
+    setProfile(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, isAuthenticated: !!user }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      session,
+      profile,
+      login, 
+      register, 
+      logout, 
+      isAuthenticated: !!user && !!profile,
+      loading
+    }}>
       {children}
     </AuthContext.Provider>
   );

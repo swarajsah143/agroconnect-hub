@@ -32,8 +32,8 @@ const Auth = () => {
 
     try {
       if (mode === 'login') {
-        const success = await login(email, password, role);
-        if (success) {
+        const result = await login(email, password, role);
+        if (result.success) {
           toast({
             title: 'Welcome back!',
             description: 'You have successfully logged in.',
@@ -48,12 +48,12 @@ const Auth = () => {
           toast({
             variant: 'destructive',
             title: 'Login failed',
-            description: 'Invalid credentials or role. Please try again.',
+            description: result.error || 'Invalid credentials. Please try again.',
           });
         }
       } else {
-        const success = await register(email, password, name, role);
-        if (success) {
+        const result = await register(email, password, name, role);
+        if (result.success) {
           toast({
             title: 'Account created!',
             description: 'Your account has been successfully created.',
@@ -68,7 +68,7 @@ const Auth = () => {
           toast({
             variant: 'destructive',
             title: 'Registration failed',
-            description: 'Email already exists. Please try logging in.',
+            description: result.error || 'Could not create account. Please try again.',
           });
         }
       }

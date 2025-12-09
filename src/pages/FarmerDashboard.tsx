@@ -14,7 +14,7 @@ import { Plus, Edit, Trash2, MessageCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const FarmerDashboard = () => {
-  const { user } = useAuth();
+  const { user, profile, loading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [crops, setCrops] = useState<Crop[]>([]);
@@ -32,13 +32,15 @@ const FarmerDashboard = () => {
   });
 
   useEffect(() => {
-    if (!user || user.role !== 'farmer') {
+    if (!loading && (!user || profile?.role !== 'farmer')) {
       navigate('/auth?role=farmer');
       return;
     }
     // Load farmer's crops
-    setCrops(mockCrops.filter(c => c.farmerId === user.id));
-  }, [user, navigate]);
+    if (user) {
+      setCrops(mockCrops.filter(c => c.farmerId === user.id));
+    }
+  }, [user, profile, loading, navigate]);
 
   const handleSubmit = () => {
     if (!formData.name || !formData.quantity || !formData.price || !formData.location) {
@@ -53,7 +55,7 @@ const FarmerDashboard = () => {
     const newCrop: Crop = {
       id: Date.now().toString(),
       farmerId: user!.id,
-      farmerName: user!.name,
+      farmerName: profile?.name || 'Farmer',
       name: formData.name,
       category: formData.category,
       quantity: Number(formData.quantity),
@@ -108,6 +110,14 @@ const FarmerDashboard = () => {
     toast({ title: 'Crop deleted successfully' });
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -116,7 +126,7 @@ const FarmerDashboard = () => {
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-4xl font-serif font-bold mb-2">Farmer Dashboard</h1>
-            <p className="text-muted-foreground">Welcome back, {user?.name}!</p>
+            <p className="text-muted-foreground">Welcome back, {profile?.name}!</p>
           </div>
           
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>

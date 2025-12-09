@@ -6,14 +6,17 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { mockCrops, Crop } from '@/data/mockData';
-import { Search, MapPin, MessageCircle } from 'lucide-react';
+import { Search, MapPin, MessageCircle, DollarSign } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import StartBargainingModal from '@/components/bargaining/StartBargainingModal';
 
 const Marketplace = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
-  const { user, isAuthenticated } = useAuth();
+  const [selectedCrop, setSelectedCrop] = useState<Crop | null>(null);
+  const [bargainModalOpen, setBargainModalOpen] = useState(false);
+  const { user, profile, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -26,6 +29,29 @@ const Marketplace = () => {
 
   const categories = ['all', ...Array.from(new Set(mockCrops.map(c => c.category)))];
 
+  const handleBargain = (crop: Crop) => {
+    if (!isAuthenticated) {
+      toast({
+        title: 'Login Required',
+        description: 'Please login as a buyer to start bargaining.',
+      });
+      navigate('/auth?role=buyer');
+      return;
+    }
+    
+    if (profile?.role !== 'buyer') {
+      toast({
+        variant: 'destructive',
+        title: 'Access Denied',
+        description: 'Only buyers can negotiate prices.',
+      });
+      return;
+    }
+
+    setSelectedCrop(crop);
+    setBargainModalOpen(true);
+  };
+
   const handleInquire = (crop: Crop) => {
     if (!isAuthenticated) {
       toast({
@@ -36,7 +62,7 @@ const Marketplace = () => {
       return;
     }
     
-    if (user?.role !== 'buyer') {
+    if (profile?.role !== 'buyer') {
       toast({
         variant: 'destructive',
         title: 'Access Denied',
@@ -123,13 +149,20 @@ const Marketplace = () => {
                   </p>
                 </div>
               </CardContent>
-              <CardFooter className="p-5 pt-0">
+              <CardFooter className="p-5 pt-0 flex gap-2">
                 <Button 
-                  className="w-full" 
+                  variant="default"
+                  className="flex-1" 
+                  onClick={() => handleBargain(crop)}
+                >
+                  <DollarSign className="w-4 h-4 mr-2" />
+                  Negotiate Price
+                </Button>
+                <Button 
+                  variant="outline"
                   onClick={() => handleInquire(crop)}
                 >
-                  <MessageCircle className="w-4 h-4 mr-2" />
-                  Send Inquiry
+                  <MessageCircle className="w-4 h-4" />
                 </Button>
               </CardFooter>
             </Card>
@@ -142,6 +175,31 @@ const Marketplace = () => {
           </div>
         )}
       </div>
+
+      {/* Bargaining Modal */}
+      {selectedCrop && (
+        <StartBargainingModal
+          crop={{
+            id: selectedCrop.id,
+            farmer_id: selectedCrop.farmerId,
+            name: selectedCrop.name,
+            price: selectedCrop.price,
+            quantity: selectedCrop.quantity,
+            unit: selectedCrop.unit,
+            image: selectedCrop.image,
+            farmer_name: selectedCrop.farmerName
+          }}
+          open={bargainModalOpen}
+          onOpenChange={setBargainModalOpen}
+          onSuccess={() => {
+            toast({
+              title: 'Negotiation Started',
+              description: 'Check your dashboard to continue the conversation.'
+            });
+            navigate('/buyer-dashboard');
+          }}
+        />
+      )}
     </div>
   );
 };

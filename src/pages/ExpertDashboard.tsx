@@ -14,7 +14,7 @@ import { Plus, ThumbsUp, MessageSquare, BookOpen } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const ExpertDashboard = () => {
-  const { user } = useAuth();
+  const { user, profile, loading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [posts, setPosts] = useState<ExpertPost[]>([]);
@@ -27,13 +27,15 @@ const ExpertDashboard = () => {
   });
 
   useEffect(() => {
-    if (!user || user.role !== 'expert') {
+    if (!loading && (!user || profile?.role !== 'expert')) {
       navigate('/auth?role=expert');
       return;
     }
     // Load expert's posts
-    setPosts(mockExpertPosts.filter(p => p.expertId === user.id));
-  }, [user, navigate]);
+    if (user) {
+      setPosts(mockExpertPosts.filter(p => p.expertId === user.id));
+    }
+  }, [user, profile, loading, navigate]);
 
   const handleSubmit = () => {
     if (!formData.title || !formData.content) {
@@ -48,7 +50,7 @@ const ExpertDashboard = () => {
     const newPost: ExpertPost = {
       id: Date.now().toString(),
       expertId: user!.id,
-      expertName: user!.name,
+      expertName: profile?.name || 'Expert',
       title: formData.title,
       content: formData.content,
       category: formData.category,
@@ -67,6 +69,14 @@ const ExpertDashboard = () => {
     setDialogOpen(false);
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -75,7 +85,7 @@ const ExpertDashboard = () => {
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-4xl font-serif font-bold mb-2">Expert Dashboard</h1>
-            <p className="text-muted-foreground">Welcome, {user?.name}!</p>
+            <p className="text-muted-foreground">Welcome, {profile?.name}!</p>
           </div>
           
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>

@@ -674,7 +674,10 @@ export const translations = {
       filterByCategory: 'श्रेणी अनुसार फिल्टर',
       filterBySeason: 'मौसम अनुसार फिल्टर',
       mostDemanded: 'यो मौसममा सबैभन्दा माग',
-      topSelling: 'सबैभन्दा धेरै बिक्रिमा उत्पादनहरू'
+      topSelling: 'सबैभन्दा धेरै बिक्रिमा उत्पादनहरू',
+      previousYearAnalysis: 'गत वर्षको बजार विश्लेषण',
+      yearOverYear: 'वर्ष मा वर्ष तुलना',
+      seasonalInsights: 'मौसमी अन्तर्दृष्टि'
     },
     cropDisease: {
       title: 'AI-संचालित बाली रोग पहिचान',

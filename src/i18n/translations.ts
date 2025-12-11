@@ -9,7 +9,8 @@ export const translations = {
       analytics: 'Analytics',
       login: 'Login',
       logout: 'Logout',
-      dashboard: 'Dashboard'
+      dashboard: 'Dashboard',
+      getStarted: 'Get Started'
     },
     // Home
     home: {
@@ -107,7 +108,10 @@ export const translations = {
       filterByCategory: 'Filter by Category',
       filterBySeason: 'Filter by Season',
       mostDemanded: 'Most Demanded This Season',
-      topSelling: 'Top Selling Products'
+      topSelling: 'Top Selling Products',
+      previousYearAnalysis: 'Previous Year Market Analysis',
+      yearOverYear: 'Year over Year Comparison',
+      seasonalInsights: 'Seasonal Insights'
     },
     // Crop Disease
     cropDisease: {
@@ -154,7 +158,8 @@ export const translations = {
       analytics: 'विश्लेषण',
       login: 'लॉगिन',
       logout: 'लॉगआउट',
-      dashboard: 'डैशबोर्ड'
+      dashboard: 'डैशबोर्ड',
+      getStarted: 'शुरू करें'
     },
     home: {
       title: 'किसानों और खरीदारों को सीधे जोड़ना',
@@ -246,7 +251,10 @@ export const translations = {
       filterByCategory: 'श्रेणी द्वारा फ़िल्टर',
       filterBySeason: 'मौसम द्वारा फ़िल्टर',
       mostDemanded: 'इस मौसम सबसे ज्यादा मांग',
-      topSelling: 'सबसे ज्यादा बिकने वाले उत्पाद'
+      topSelling: 'सबसे ज्यादा बिकने वाले उत्पाद',
+      previousYearAnalysis: 'पिछले वर्ष का बाज़ार विश्लेषण',
+      yearOverYear: 'वर्ष दर वर्ष तुलना',
+      seasonalInsights: 'मौसमी अंतर्दृष्टि'
     },
     cropDisease: {
       title: 'AI-संचालित फसल रोग पहचान',
@@ -291,7 +299,8 @@ export const translations = {
       analytics: 'ವಿಶ್ಲೇಷಣೆ',
       login: 'ಲಾಗಿನ್',
       logout: 'ಲಾಗ್ಔಟ್',
-      dashboard: 'ಡ್ಯಾಶ್‌ಬೋರ್ಡ್'
+      dashboard: 'ಡ್ಯಾಶ್‌ಬೋರ್ಡ್',
+      getStarted: 'ಪ್ರಾರಂಭಿಸಿ'
     },
     home: {
       title: 'ರೈತರು ಮತ್ತು ಖರೀದಿದಾರರನ್ನು ನೇರವಾಗಿ ಸಂಪರ್ಕಿಸುವುದು',
@@ -383,7 +392,10 @@ export const translations = {
       filterByCategory: 'ವರ್ಗದ ಮೂಲಕ ಫಿಲ್ಟರ್',
       filterBySeason: 'ಋತುವಿನ ಮೂಲಕ ಫಿಲ್ಟರ್',
       mostDemanded: 'ಈ ಋತುವಿನಲ್ಲಿ ಹೆಚ್ಚು ಬೇಡಿಕೆ',
-      topSelling: 'ಹೆಚ್ಚು ಮಾರಾಟವಾಗುವ ಉತ್ಪನ್ನಗಳು'
+      topSelling: 'ಹೆಚ್ಚು ಮಾರಾಟವಾಗುವ ಉತ್ಪನ್ನಗಳು',
+      previousYearAnalysis: 'ಹಿಂದಿನ ವರ್ಷದ ಮಾರುಕಟ್ಟೆ ವಿಶ್ಲೇಷಣೆ',
+      yearOverYear: 'ವರ್ಷ ಮೇಲೆ ವರ್ಷ ಹೋಲಿಕೆ',
+      seasonalInsights: 'ಋತುಮಾನ ಒಳನೋಟಗಳು'
     },
     cropDisease: {
       title: 'AI-ಚಾಲಿತ ಬೆಳೆ ರೋಗ ಪತ್ತೆ',
@@ -428,7 +440,8 @@ export const translations = {
       analytics: 'విశ్లేషణలు',
       login: 'లాగిన్',
       logout: 'లాగౌట్',
-      dashboard: 'డాష్‌బోర్డ్'
+      dashboard: 'డాష్‌బోర్డ్',
+      getStarted: 'ప్రారంభించండి'
     },
     home: {
       title: 'రైతులు మరియు కొనుగోలుదారులను నేరుగా అనుసంధానం చేయడం',
@@ -520,7 +533,10 @@ export const translations = {
       filterByCategory: 'వర్గం ద్వారా ఫిల్టర్',
       filterBySeason: 'సీజన్ ద్వారా ఫిల్టర్',
       mostDemanded: 'ఈ సీజన్‌లో అత్యధిక డిమాండ్',
-      topSelling: 'అత్యధికంగా అమ్ముడవుతున్న ఉత్పత్తులు'
+      topSelling: 'అత్యధికంగా అమ్ముడవుతున్న ఉత్పత్తులు',
+      previousYearAnalysis: 'గత సంవత్సరం మార్కెట్ విశ్లేషణ',
+      yearOverYear: 'సంవత్సరం మీద సంవత్సరం పోలిక',
+      seasonalInsights: 'సీజనల్ అంతర్దృష్టులు'
     },
     cropDisease: {
       title: 'AI-ఆధారిత పంట వ్యాధి గుర్తింపు',
@@ -565,7 +581,8 @@ export const translations = {
       analytics: 'विश्लेषण',
       login: 'लगइन',
       logout: 'लगआउट',
-      dashboard: 'ड्यासबोर्ड'
+      dashboard: 'ड्यासबोर्ड',
+      getStarted: 'सुरु गर्नुहोस्'
     },
     home: {
       title: 'किसान र क्रेताहरूलाई सीधा जोड्दै',

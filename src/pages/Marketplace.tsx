@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { mockCrops, Crop } from '@/data/mockData';
 import { Search, MapPin, MessageCircle, DollarSign } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
 import StartBargainingModal from '@/components/bargaining/StartBargainingModal';
 
@@ -17,6 +18,7 @@ const Marketplace = () => {
   const [selectedCrop, setSelectedCrop] = useState<Crop | null>(null);
   const [bargainModalOpen, setBargainModalOpen] = useState(false);
   const { user, profile, isAuthenticated } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -32,8 +34,8 @@ const Marketplace = () => {
   const handleBargain = (crop: Crop) => {
     if (!isAuthenticated) {
       toast({
-        title: 'Login Required',
-        description: 'Please login as a buyer to start bargaining.',
+        title: t.marketplace.loginRequired,
+        description: t.marketplace.loginToBargain,
       });
       navigate('/auth?role=buyer');
       return;
@@ -42,8 +44,8 @@ const Marketplace = () => {
     if (profile?.role !== 'buyer') {
       toast({
         variant: 'destructive',
-        title: 'Access Denied',
-        description: 'Only buyers can negotiate prices.',
+        title: t.marketplace.accessDenied,
+        description: t.marketplace.onlyBuyers,
       });
       return;
     }
@@ -55,8 +57,8 @@ const Marketplace = () => {
   const handleInquire = (crop: Crop) => {
     if (!isAuthenticated) {
       toast({
-        title: 'Login Required',
-        description: 'Please login as a buyer to send inquiries.',
+        title: t.marketplace.loginRequired,
+        description: t.marketplace.loginToBargain,
       });
       navigate('/auth?role=buyer');
       return;
@@ -65,15 +67,15 @@ const Marketplace = () => {
     if (profile?.role !== 'buyer') {
       toast({
         variant: 'destructive',
-        title: 'Access Denied',
-        description: 'Only buyers can send inquiries.',
+        title: t.marketplace.accessDenied,
+        description: t.marketplace.onlyBuyers,
       });
       return;
     }
 
     toast({
-      title: 'Inquiry Sent!',
-      description: `Your inquiry for ${crop.name} has been sent to ${crop.farmerName}.`,
+      title: t.marketplace.inquirySent,
+      description: `${crop.name} - ${crop.farmerName}`,
     });
   };
 
@@ -83,8 +85,8 @@ const Marketplace = () => {
 
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
-          <h1 className="text-4xl font-serif font-bold mb-4">Marketplace</h1>
-          <p className="text-muted-foreground">Browse fresh produce directly from farmers</p>
+          <h1 className="text-4xl font-serif font-bold mb-4">{t.marketplace.title}</h1>
+          <p className="text-muted-foreground">{t.marketplace.subtitle}</p>
         </div>
 
         {/* Filters */}
@@ -92,7 +94,7 @@ const Marketplace = () => {
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
             <Input
-              placeholder="Search crops or farmers..."
+              placeholder={t.marketplace.searchPlaceholder}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
@@ -100,12 +102,12 @@ const Marketplace = () => {
           </div>
           <Select value={categoryFilter} onValueChange={setCategoryFilter}>
             <SelectTrigger className="w-full md:w-48">
-              <SelectValue placeholder="Category" />
+              <SelectValue placeholder={t.marketplace.allCategories} />
             </SelectTrigger>
             <SelectContent>
               {categories.map((cat) => (
                 <SelectItem key={cat} value={cat}>
-                  {cat === 'all' ? 'All Categories' : cat}
+                  {cat === 'all' ? t.marketplace.allCategories : cat}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -135,16 +137,16 @@ const Marketplace = () => {
                 <div className="flex justify-between items-center">
                   <div>
                     <p className="text-2xl font-bold text-primary">₹{crop.price}</p>
-                    <p className="text-sm text-muted-foreground">per {crop.unit}</p>
+                    <p className="text-sm text-muted-foreground">{t.marketplace.perUnit} {crop.unit}</p>
                   </div>
                   <div className="text-right">
                     <p className="font-semibold">{crop.quantity} {crop.unit}</p>
-                    <p className="text-sm text-muted-foreground">available</p>
+                    <p className="text-sm text-muted-foreground">{t.marketplace.available}</p>
                   </div>
                 </div>
                 <div className="pt-2 border-t border-border">
                   <p className="text-sm">
-                    <span className="text-muted-foreground">Seller:</span>{' '}
+                    <span className="text-muted-foreground">{t.marketplace.seller}:</span>{' '}
                     <span className="font-medium">{crop.farmerName}</span>
                   </p>
                 </div>
@@ -156,7 +158,7 @@ const Marketplace = () => {
                   onClick={() => handleBargain(crop)}
                 >
                   <DollarSign className="w-4 h-4 mr-2" />
-                  Negotiate Price
+                  {t.marketplace.negotiatePrice}
                 </Button>
                 <Button 
                   variant="outline"
@@ -171,7 +173,7 @@ const Marketplace = () => {
 
         {filteredCrops.length === 0 && (
           <div className="text-center py-12">
-            <p className="text-muted-foreground text-lg">No crops found matching your criteria</p>
+            <p className="text-muted-foreground text-lg">{t.marketplace.noResults}</p>
           </div>
         )}
       </div>
@@ -193,8 +195,8 @@ const Marketplace = () => {
           onOpenChange={setBargainModalOpen}
           onSuccess={() => {
             toast({
-              title: 'Negotiation Started',
-              description: 'Check your dashboard to continue the conversation.'
+              title: t.marketplace.negotiationStarted,
+              description: t.marketplace.checkDashboard
             });
             navigate('/buyer-dashboard');
           }}

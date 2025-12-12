@@ -116,9 +116,40 @@ const Auth = () => {
       return;
     }
 
-    const success = await sendOTP();
-    if (success) {
-      setRegistrationStep('otp');
+    // Only require OTP for the test email (Resend limitation)
+    const requiresOtp = email.toLowerCase() === 'swarajsah143@gmail.com';
+    
+    if (requiresOtp) {
+      const success = await sendOTP();
+      if (success) {
+        setRegistrationStep('otp');
+      }
+    } else {
+      // Skip OTP for other emails - register directly
+      setLoading(true);
+      try {
+        const result = await register(email, password, name, role);
+        if (result.success) {
+          toast({
+            title: 'Account created!',
+            description: 'Your account has been successfully created.',
+          });
+          const dashboardMap = {
+            farmer: '/farmer-dashboard',
+            buyer: '/buyer-dashboard',
+            expert: '/expert-dashboard'
+          };
+          navigate(dashboardMap[role]);
+        } else {
+          toast({
+            variant: 'destructive',
+            title: 'Registration failed',
+            description: result.error || 'Could not create account. Please try again.',
+          });
+        }
+      } finally {
+        setLoading(false);
+      }
     }
   };
 

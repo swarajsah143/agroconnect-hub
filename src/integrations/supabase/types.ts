@@ -153,6 +153,36 @@ export type Database = {
           },
         ]
       }
+      otp_verifications: {
+        Row: {
+          attempts: number
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          otp_hash: string
+          verified: boolean
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          email: string
+          expires_at: string
+          id?: string
+          otp_hash: string
+          verified?: boolean
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          otp_hash?: string
+          verified?: boolean
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -185,7 +215,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      cleanup_expired_otps: { Args: never; Returns: undefined }
     }
     Enums: {
       [_ in never]: never

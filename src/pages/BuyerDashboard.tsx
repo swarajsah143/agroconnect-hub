@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { mockCrops } from '@/data/mockData';
 import { ShoppingCart, MessageCircle, TrendingUp, Package } from 'lucide-react';
 import NegotiationsList from '@/components/bargaining/NegotiationsList';
+import MyOrders from '@/components/orders/MyOrders';
 
 const BuyerDashboard = () => {
   const { user, profile, loading } = useAuth();
@@ -105,54 +106,10 @@ const BuyerDashboard = () => {
           </Card>
         </div>
 
-        {/* Recent Inquiries */}
-        <Card className="mb-8">
-          <CardHeader>
-            <div className="flex justify-between items-center">
-              <CardTitle>My Recent Inquiries</CardTitle>
-              <Button variant="outline" size="sm">View All</Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between p-4 border border-border rounded-lg">
-                <div className="flex items-center gap-4">
-                  <img 
-                    src="https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=100" 
-                    alt="Tomatoes"
-                    className="w-12 h-12 rounded object-cover"
-                  />
-                  <div>
-                    <p className="font-semibold">Organic Tomatoes</p>
-                    <p className="text-sm text-muted-foreground">John Farmer • 200 kg requested</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-sm bg-accent/20 text-accent-foreground px-3 py-1 rounded-full">Pending</span>
-                  <Button size="sm" variant="outline">View</Button>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between p-4 border border-border rounded-lg">
-                <div className="flex items-center gap-4">
-                  <img 
-                    src="https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=100" 
-                    alt="Wheat"
-                    className="w-12 h-12 rounded object-cover"
-                  />
-                  <div>
-                    <p className="font-semibold">Wheat</p>
-                    <p className="text-sm text-muted-foreground">Sarah Green • 500 kg requested</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-sm bg-primary/20 text-primary px-3 py-1 rounded-full">Responded</span>
-                  <Button size="sm" variant="outline">View</Button>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        {/* My Orders - Real-time */}
+        <div className="mb-8">
+          <MyOrders />
+        </div>
 
         {/* Negotiations */}
         <Card className="mb-8">

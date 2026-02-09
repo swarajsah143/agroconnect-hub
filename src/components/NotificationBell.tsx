@@ -14,12 +14,13 @@ import { useToast } from '@/hooks/use-toast';
 
 interface Notification {
   id: string;
-  type: 'negotiation' | 'order' | 'message';
+  type: 'negotiation' | 'order' | 'order_reply' | 'message';
   title: string;
   message: string;
   read: boolean;
   createdAt: string;
   negotiationId?: string;
+  orderId?: string;
 }
 
 const NotificationBell = () => {
@@ -148,12 +149,120 @@ const NotificationBell = () => {
           }
         }
       )
+    // Listen for new orders (for farmers)
+    const orderChannel = supabase
+      .channel('new-orders')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'orders',
+          filter: `farmer_id=eq.${user.id}`
+        },
+        async (payload) => {
+          const newOrder = payload.new as any;
+          
+          // Fetch buyer name
+          const { data: buyerProfile } = await supabase
+            .from('profiles')
+            .select('name')
+            .eq('user_id', newOrder.buyer_id)
+            .single();
+
+          const newNotification: Notification = {
+            id: `order-${newOrder.id}`,
+            type: 'order',
+            title: '📦 New Order Request',
+            message: `${buyerProfile?.name || 'A buyer'} wants to order ${newOrder.quantity} of ${newOrder.crop_name}`,
+            read: false,
+            createdAt: new Date().toISOString(),
+            orderId: newOrder.id
+          };
+          
+          setNotifications(prev => {
+            // Prevent duplicate notifications
+            if (prev.some(n => n.id === newNotification.id)) return prev;
+            return [newNotification, ...prev];
+          });
+          setUnreadCount(prev => prev + 1);
+          
+          toast({
+            title: '📦 New Order Request',
+            description: `${buyerProfile?.name || 'A buyer'} wants to order ${newOrder.crop_name}`,
+          });
+        }
+      )
+      .subscribe();
+
+    // Listen for order replies (for buyers)
+    const orderReplyChannel = supabase
+      .channel('new-order-replies')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'order_replies'
+        },
+        async (payload) => {
+          const newReply = payload.new as any;
+          
+          // Only notify if the reply is not from the current user
+          if (newReply.sender_id === user.id) return;
+
+          // Check if this order belongs to the current user
+          const { data: order } = await supabase
+            .from('orders')
+            .select('buyer_id, crop_name')
+            .eq('id', newReply.order_id)
+            .single();
+
+          if (!order || order.buyer_id !== user.id) return;
+
+          // Fetch sender name
+          const { data: senderProfile } = await supabase
+            .from('profiles')
+            .select('name')
+            .eq('user_id', newReply.sender_id)
+            .single();
+
+          const replyTypeEmoji = 
+            newReply.reply_type === 'accept' ? '✅' :
+            newReply.reply_type === 'reject' ? '❌' :
+            newReply.reply_type === 'counter_offer' ? '🔄' : '💬';
+
+          const newNotification: Notification = {
+            id: `reply-${newReply.id}`,
+            type: 'order_reply',
+            title: `${replyTypeEmoji} Farmer Replied`,
+            message: `${senderProfile?.name || 'Farmer'} responded to your order for ${order.crop_name}`,
+            read: false,
+            createdAt: new Date().toISOString(),
+            orderId: newReply.order_id
+          };
+          
+          setNotifications(prev => {
+            // Prevent duplicate notifications
+            if (prev.some(n => n.id === newNotification.id)) return prev;
+            return [newNotification, ...prev];
+          });
+          setUnreadCount(prev => prev + 1);
+          
+          toast({
+            title: `${replyTypeEmoji} Farmer Replied`,
+            description: `${senderProfile?.name || 'Farmer'} responded to your order`,
+          });
+        }
+      )
       .subscribe();
 
     return () => {
       supabase.removeChannel(negotiationChannel);
       supabase.removeChannel(updateChannel);
       supabase.removeChannel(messageChannel);
+      supabase.removeChannel(orderChannel);
+      supabase.removeChannel(orderReplyChannel);
     };
   }, [user, profile, toast]);
 

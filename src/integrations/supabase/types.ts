@@ -153,6 +153,88 @@ export type Database = {
           },
         ]
       }
+      order_replies: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          order_id: string
+          reply_type: string
+          sender_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: string
+          order_id: string
+          reply_type?: string
+          sender_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          order_id?: string
+          reply_type?: string
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_replies_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          buyer_id: string
+          created_at: string
+          crop_id: string | null
+          crop_name: string
+          farmer_id: string
+          id: string
+          message: string | null
+          quantity: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          buyer_id: string
+          created_at?: string
+          crop_id?: string | null
+          crop_name: string
+          farmer_id: string
+          id?: string
+          message?: string | null
+          quantity: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          buyer_id?: string
+          created_at?: string
+          crop_id?: string | null
+          crop_name?: string
+          farmer_id?: string
+          id?: string
+          message?: string | null
+          quantity?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_crop_id_fkey"
+            columns: ["crop_id"]
+            isOneToOne: false
+            referencedRelation: "crops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       otp_verifications: {
         Row: {
           attempts: number

@@ -10,7 +10,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { mockCrops, Crop } from '@/data/mockData';
-import { Plus, Edit, Trash2, MessageCircle } from 'lucide-react';
+import { Plus, Edit, Trash2 } from 'lucide-react';
+import IncomingOrders from '@/components/orders/IncomingOrders';
 import { useToast } from '@/hooks/use-toast';
 
 const FarmerDashboard = () => {
@@ -312,41 +313,10 @@ const FarmerDashboard = () => {
           </CardContent>
         </Card>
 
-        {/* Inquiries Section */}
-        <Card className="mt-8">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <MessageCircle className="w-5 h-5" />
-              Recent Inquiries
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <div className="p-4 border border-border rounded-lg">
-                <div className="flex justify-between items-start mb-2">
-                  <div>
-                    <p className="font-semibold">Ravi Kumar (Buyer)</p>
-                    <p className="text-sm text-muted-foreground">Interested in: Organic Tomatoes</p>
-                  </div>
-                  <span className="text-xs text-muted-foreground">2 hours ago</span>
-                </div>
-                <p className="text-sm">Looking to purchase 200 kg for my restaurant. Can we discuss pricing?</p>
-                <Button size="sm" variant="outline" className="mt-3">Reply</Button>
-              </div>
-              <div className="p-4 border border-border rounded-lg">
-                <div className="flex justify-between items-start mb-2">
-                  <div>
-                    <p className="font-semibold">Amit Traders (Buyer)</p>
-                    <p className="text-sm text-muted-foreground">Interested in: Fresh Apples</p>
-                  </div>
-                  <span className="text-xs text-muted-foreground">1 day ago</span>
-                </div>
-                <p className="text-sm">Need bulk order of 500 kg. Please share best price.</p>
-                <Button size="sm" variant="outline" className="mt-3">Reply</Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Incoming Orders - Real-time */}
+        <div className="mt-8">
+          <IncomingOrders />
+        </div>
       </div>
     </div>
   );

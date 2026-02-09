@@ -6,17 +6,20 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { mockCrops, Crop } from '@/data/mockData';
-import { Search, MapPin, MessageCircle, DollarSign } from 'lucide-react';
+import { Search, MapPin, MessageCircle, DollarSign, ShoppingCart } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
 import StartBargainingModal from '@/components/bargaining/StartBargainingModal';
+import PlaceOrderModal from '@/components/orders/PlaceOrderModal';
 
 const Marketplace = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [selectedCrop, setSelectedCrop] = useState<Crop | null>(null);
   const [bargainModalOpen, setBargainModalOpen] = useState(false);
+  const [orderModalOpen, setOrderModalOpen] = useState(false);
+  const [orderCrop, setOrderCrop] = useState<Crop | null>(null);
   const { user, profile, isAuthenticated } = useAuth();
   const { t } = useLanguage();
   const navigate = useNavigate();
@@ -54,7 +57,7 @@ const Marketplace = () => {
     setBargainModalOpen(true);
   };
 
-  const handleInquire = (crop: Crop) => {
+  const handlePlaceOrder = (crop: Crop) => {
     if (!isAuthenticated) {
       toast({
         title: t.marketplace.loginRequired,
@@ -73,10 +76,8 @@ const Marketplace = () => {
       return;
     }
 
-    toast({
-      title: t.marketplace.inquirySent,
-      description: `${crop.name} - ${crop.farmerName}`,
-    });
+    setOrderCrop(crop);
+    setOrderModalOpen(true);
   };
 
   return (
@@ -162,9 +163,10 @@ const Marketplace = () => {
                 </Button>
                 <Button 
                   variant="outline"
-                  onClick={() => handleInquire(crop)}
+                  onClick={() => handlePlaceOrder(crop)}
                 >
-                  <MessageCircle className="w-4 h-4" />
+                  <ShoppingCart className="w-4 h-4 mr-2" />
+                  Order
                 </Button>
               </CardFooter>
             </Card>
@@ -198,6 +200,26 @@ const Marketplace = () => {
               title: t.marketplace.negotiationStarted,
               description: t.marketplace.checkDashboard
             });
+            navigate('/buyer-dashboard');
+          }}
+        />
+      )}
+
+      {/* Place Order Modal */}
+      {orderCrop && (
+        <PlaceOrderModal
+          crop={{
+            id: orderCrop.id,
+            farmer_id: orderCrop.farmerId,
+            name: orderCrop.name,
+            price: orderCrop.price,
+            quantity: orderCrop.quantity,
+            unit: orderCrop.unit,
+            farmer_name: orderCrop.farmerName
+          }}
+          open={orderModalOpen}
+          onOpenChange={setOrderModalOpen}
+          onSuccess={() => {
             navigate('/buyer-dashboard');
           }}
         />

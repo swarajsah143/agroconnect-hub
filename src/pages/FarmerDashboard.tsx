@@ -314,6 +314,19 @@ const FarmerDashboard = () => {
           </CardContent>
         </Card>
 
+        {/* Negotiations */}
+        <Card className="mt-8">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <MessageCircle className="w-5 h-5" />
+              Price Negotiations
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <NegotiationsList />
+          </CardContent>
+        </Card>
+
         {/* Incoming Orders - Real-time */}
         <div className="mt-8">
           <IncomingOrders />

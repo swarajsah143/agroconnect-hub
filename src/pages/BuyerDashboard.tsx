@@ -4,14 +4,31 @@ import { useAuth } from '@/contexts/AuthContext';
 import Navbar from '@/components/Navbar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { mockCrops } from '@/data/mockData';
 import { ShoppingCart, MessageCircle, TrendingUp, Package } from 'lucide-react';
 import NegotiationsList from '@/components/bargaining/NegotiationsList';
 import MyOrders from '@/components/orders/MyOrders';
+import { useAllCrops } from '@/hooks/useCrops';
+import { supabase } from '@/integrations/supabase/client';
+import { useQuery } from '@tanstack/react-query';
 
 const BuyerDashboard = () => {
   const { user, profile, loading } = useAuth();
   const navigate = useNavigate();
+  const { data: crops = [] } = useAllCrops();
+
+  // Fetch farmer profiles for recommended crops
+  const farmerIds = [...new Set(crops.map(c => c.farmer_id))];
+  const { data: profiles = [] } = useQuery({
+    queryKey: ['profiles', farmerIds],
+    queryFn: async () => {
+      if (farmerIds.length === 0) return [];
+      const { data, error } = await supabase.from('profiles').select('user_id, name').in('user_id', farmerIds);
+      if (error) throw error;
+      return data;
+    },
+    enabled: farmerIds.length > 0,
+  });
+  const farmerNameMap = Object.fromEntries(profiles.map(p => [p.user_id, p.name]));
 
   useEffect(() => {
     if (!loading && (!user || profile?.role !== 'buyer')) {
@@ -40,36 +57,20 @@ const BuyerDashboard = () => {
         {/* Stats */}
         <div className="grid md:grid-cols-4 gap-6 mb-8">
           <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Active Inquiries</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold">8</p>
-            </CardContent>
+            <CardHeader className="pb-3"><CardTitle className="text-sm font-medium text-muted-foreground">Active Inquiries</CardTitle></CardHeader>
+            <CardContent><p className="text-3xl font-bold">8</p></CardContent>
           </Card>
           <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Completed Orders</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold">24</p>
-            </CardContent>
+            <CardHeader className="pb-3"><CardTitle className="text-sm font-medium text-muted-foreground">Completed Orders</CardTitle></CardHeader>
+            <CardContent><p className="text-3xl font-bold">24</p></CardContent>
           </Card>
           <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Total Spent</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold">₹1.2L</p>
-            </CardContent>
+            <CardHeader className="pb-3"><CardTitle className="text-sm font-medium text-muted-foreground">Total Spent</CardTitle></CardHeader>
+            <CardContent><p className="text-3xl font-bold">₹1.2L</p></CardContent>
           </Card>
           <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Saved</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold">₹18K</p>
-            </CardContent>
+            <CardHeader className="pb-3"><CardTitle className="text-sm font-medium text-muted-foreground">Saved</CardTitle></CardHeader>
+            <CardContent><p className="text-3xl font-bold">₹18K</p></CardContent>
           </Card>
         </div>
 
@@ -84,7 +85,6 @@ const BuyerDashboard = () => {
               <p className="text-sm text-muted-foreground">Find fresh produce from farmers</p>
             </CardContent>
           </Card>
-
           <Card className="hover:shadow-lg transition-shadow">
             <CardContent className="p-6 text-center space-y-3">
               <div className="w-12 h-12 mx-auto bg-primary/10 rounded-full flex items-center justify-center">
@@ -94,7 +94,6 @@ const BuyerDashboard = () => {
               <p className="text-sm text-muted-foreground">View and manage your inquiries</p>
             </CardContent>
           </Card>
-
           <Card className="hover:shadow-lg transition-shadow">
             <CardContent className="p-6 text-center space-y-3">
               <div className="w-12 h-12 mx-auto bg-primary/10 rounded-full flex items-center justify-center">
@@ -106,7 +105,7 @@ const BuyerDashboard = () => {
           </Card>
         </div>
 
-        {/* My Orders - Real-time */}
+        {/* My Orders */}
         <div className="mb-8">
           <MyOrders />
         </div>
@@ -124,7 +123,7 @@ const BuyerDashboard = () => {
           </CardContent>
         </Card>
 
-        {/* Recommended Products */}
+        {/* Recommended Products - from Supabase */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -134,15 +133,15 @@ const BuyerDashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="grid md:grid-cols-3 gap-6">
-              {mockCrops.slice(0, 3).map((crop) => (
+              {crops.slice(0, 3).map((crop) => (
                 <div key={crop.id} className="border border-border rounded-lg overflow-hidden hover:shadow-md transition-shadow">
-                  <img src={crop.image} alt={crop.name} className="w-full h-40 object-cover" />
+                  <img src={crop.image || 'https://images.unsplash.com/photo-1560493676-04071c5f467b?w=400'} alt={crop.name} className="w-full h-40 object-cover" />
                   <div className="p-4 space-y-2">
                     <h3 className="font-semibold">{crop.name}</h3>
-                    <p className="text-sm text-muted-foreground">{crop.farmerName}</p>
+                    <p className="text-sm text-muted-foreground">{farmerNameMap[crop.farmer_id] || 'Farmer'}</p>
                     <div className="flex justify-between items-center pt-2">
                       <p className="text-lg font-bold text-primary">₹{crop.price}/{crop.unit}</p>
-                      <Button size="sm">Inquire</Button>
+                      <Button size="sm" onClick={() => navigate('/marketplace')}>Inquire</Button>
                     </div>
                   </div>
                 </div>

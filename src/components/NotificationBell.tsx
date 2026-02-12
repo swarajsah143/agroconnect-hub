@@ -149,6 +149,8 @@ const NotificationBell = () => {
           }
         }
       )
+      .subscribe();
+
     // Listen for new orders (for farmers)
     const orderChannel = supabase
       .channel('new-orders')

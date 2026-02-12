@@ -10,7 +10,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { mockCrops, Crop } from '@/data/mockData';
-import { Plus, Edit, Trash2 } from 'lucide-react';
+import { Plus, Edit, Trash2, MessageCircle } from 'lucide-react';
+import NegotiationsList from '@/components/bargaining/NegotiationsList';
 import IncomingOrders from '@/components/orders/IncomingOrders';
 import { useToast } from '@/hooks/use-toast';
 
@@ -310,6 +311,19 @@ const FarmerDashboard = () => {
                 ))}
               </div>
             )}
+          </CardContent>
+        </Card>
+
+        {/* Negotiations */}
+        <Card className="mt-8">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <MessageCircle className="w-5 h-5" />
+              Price Negotiations
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <NegotiationsList />
           </CardContent>
         </Card>
 

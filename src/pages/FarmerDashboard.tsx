@@ -10,7 +10,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { mockCrops, Crop } from '@/data/mockData';
-import { Plus, Edit, Trash2 } from 'lucide-react';
+import { Plus, Edit, Trash2, MessageCircle } from 'lucide-react';
+import NegotiationsList from '@/components/bargaining/NegotiationsList';
 import IncomingOrders from '@/components/orders/IncomingOrders';
 import { useToast } from '@/hooks/use-toast';
 

@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      crop_catalog: {
+        Row: {
+          category: string
+          created_at: string
+          default_image_url: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          default_image_url?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          default_image_url?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       crops: {
         Row: {
           category: string
@@ -58,6 +82,66 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      farmer_listings: {
+        Row: {
+          created_at: string
+          crop_catalog_id: string | null
+          crop_id: string | null
+          description: string | null
+          farmer_id: string
+          id: string
+          is_active: boolean
+          location: string
+          price: number
+          quantity: number
+          unit: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          crop_catalog_id?: string | null
+          crop_id?: string | null
+          description?: string | null
+          farmer_id: string
+          id?: string
+          is_active?: boolean
+          location: string
+          price: number
+          quantity: number
+          unit?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          crop_catalog_id?: string | null
+          crop_id?: string | null
+          description?: string | null
+          farmer_id?: string
+          id?: string
+          is_active?: boolean
+          location?: string
+          price?: number
+          quantity?: number
+          unit?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "farmer_listings_crop_catalog_id_fkey"
+            columns: ["crop_catalog_id"]
+            isOneToOne: false
+            referencedRelation: "crop_catalog"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "farmer_listings_crop_id_fkey"
+            columns: ["crop_id"]
+            isOneToOne: false
+            referencedRelation: "crops"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       negotiation_messages: {
         Row: {

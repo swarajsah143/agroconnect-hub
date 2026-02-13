@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Plus, Edit, Trash2, MessageCircle } from 'lucide-react';
 import NegotiationsList from '@/components/bargaining/NegotiationsList';
 import IncomingOrders from '@/components/orders/IncomingOrders';
+import CropCatalogBrowser from '@/components/farmer/CropCatalogBrowser';
 import { useToast } from '@/hooks/use-toast';
 import { useFarmerCrops, useAddCrop, useUpdateCrop, useDeleteCrop } from '@/hooks/useCrops';
 import { getCropImage } from '@/utils/cropImages';
@@ -159,6 +160,7 @@ const FarmerDashboard = () => {
                         <SelectItem value="Fruits">Fruits</SelectItem>
                         <SelectItem value="Grains">Grains</SelectItem>
                         <SelectItem value="Pulses">Pulses</SelectItem>
+                        <SelectItem value="Spices">Spices</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -266,6 +268,11 @@ const FarmerDashboard = () => {
             )}
           </CardContent>
         </Card>
+
+        {/* Crop Catalog */}
+        <div className="mt-8">
+          <CropCatalogBrowser />
+        </div>
 
         {/* Negotiations */}
         <Card className="mt-8">

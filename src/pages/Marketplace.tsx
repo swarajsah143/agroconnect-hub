@@ -12,7 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import StartBargainingModal from '@/components/bargaining/StartBargainingModal';
 import PlaceOrderModal from '@/components/orders/PlaceOrderModal';
 import { useAllCrops, CropRow } from '@/hooks/useCrops';
-import { getCropImage } from '@/utils/cropImages';
+import CropImage from '@/components/CropImage';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 
@@ -133,13 +133,11 @@ const Marketplace = () => {
                 const farmerName = farmerNameMap[crop.farmer_id] || 'Farmer';
                 return (
                   <Card key={crop.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-                    <div className="aspect-video overflow-hidden">
-                      <img
-                        src={crop.image || getCropImage(crop.name)}
-                        alt={crop.name}
-                        className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                      />
-                    </div>
+                    <CropImage
+                      cropName={crop.name}
+                      imageUrl={crop.image}
+                      className="aspect-video hover:scale-105 transition-transform duration-300"
+                    />
                     <CardContent className="p-5 space-y-3">
                       <div>
                         <h3 className="text-xl font-semibold mb-1">{crop.name}</h3>

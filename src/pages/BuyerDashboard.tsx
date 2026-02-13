@@ -8,7 +8,7 @@ import { ShoppingCart, MessageCircle, TrendingUp, Package } from 'lucide-react';
 import NegotiationsList from '@/components/bargaining/NegotiationsList';
 import MyOrders from '@/components/orders/MyOrders';
 import { useAllCrops } from '@/hooks/useCrops';
-import { getCropImage } from '@/utils/cropImages';
+import CropImage from '@/components/CropImage';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 
@@ -136,7 +136,7 @@ const BuyerDashboard = () => {
             <div className="grid md:grid-cols-3 gap-6">
               {crops.slice(0, 3).map((crop) => (
                 <div key={crop.id} className="border border-border rounded-lg overflow-hidden hover:shadow-md transition-shadow">
-                  <img src={crop.image || getCropImage(crop.name)} alt={crop.name} className="w-full h-40 object-cover" />
+                  <CropImage cropName={crop.name} imageUrl={crop.image} className="w-full h-40" />
                   <div className="p-4 space-y-2">
                     <h3 className="font-semibold">{crop.name}</h3>
                     <p className="text-sm text-muted-foreground">{farmerNameMap[crop.farmer_id] || 'Farmer'}</p>

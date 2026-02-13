@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import StartBargainingModal from '@/components/bargaining/StartBargainingModal';
 import PlaceOrderModal from '@/components/orders/PlaceOrderModal';
 import { useAllCrops, CropRow } from '@/hooks/useCrops';
+import { getCropImage } from '@/utils/cropImages';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 
@@ -134,7 +135,7 @@ const Marketplace = () => {
                   <Card key={crop.id} className="overflow-hidden hover:shadow-lg transition-shadow">
                     <div className="aspect-video overflow-hidden">
                       <img
-                        src={crop.image || 'https://images.unsplash.com/photo-1560493676-04071c5f467b?w=400'}
+                        src={crop.image || getCropImage(crop.name)}
                         alt={crop.name}
                         className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                       />

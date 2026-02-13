@@ -14,6 +14,7 @@ import NegotiationsList from '@/components/bargaining/NegotiationsList';
 import IncomingOrders from '@/components/orders/IncomingOrders';
 import { useToast } from '@/hooks/use-toast';
 import { useFarmerCrops, useAddCrop, useUpdateCrop, useDeleteCrop } from '@/hooks/useCrops';
+import { getCropImage } from '@/utils/cropImages';
 
 const FarmerDashboard = () => {
   const { user, profile, loading } = useAuth();
@@ -74,7 +75,7 @@ const FarmerDashboard = () => {
         price: Number(formData.price),
         location: formData.location,
         description: formData.description,
-        image: 'https://images.unsplash.com/photo-1560493676-04071c5f467b?w=400',
+        image: getCropImage(formData.name),
       }, {
         onSuccess: () => {
           toast({ title: 'Crop added successfully!' });
@@ -244,7 +245,7 @@ const FarmerDashboard = () => {
                 {crops.map((crop) => (
                   <div key={crop.id} className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors">
                     <div className="flex items-center gap-4 flex-1">
-                      <img src={crop.image || 'https://images.unsplash.com/photo-1560493676-04071c5f467b?w=400'} alt={crop.name} className="w-16 h-16 rounded object-cover" />
+                      <img src={crop.image || getCropImage(crop.name)} alt={crop.name} className="w-16 h-16 rounded object-cover" />
                       <div className="flex-1">
                         <h3 className="font-semibold text-lg">{crop.name}</h3>
                         <p className="text-sm text-muted-foreground">{crop.category} • {crop.location}</p>

@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { ShoppingCart, MessageCircle, TrendingUp, Package } from 'lucide-react';
 import NegotiationsList from '@/components/bargaining/NegotiationsList';
 import MyOrders from '@/components/orders/MyOrders';
-import { useAllCrops } from '@/hooks/useCrops';
+import { useAllUnifiedCrops } from '@/hooks/useUnifiedCrops';
 import CropImage from '@/components/CropImage';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
@@ -15,7 +15,7 @@ import { useQuery } from '@tanstack/react-query';
 const BuyerDashboard = () => {
   const { user, profile, loading } = useAuth();
   const navigate = useNavigate();
-  const { data: crops = [] } = useAllCrops();
+  const { data: crops = [] } = useAllUnifiedCrops();
 
   // Fetch farmer profiles for recommended crops
   const farmerIds = [...new Set(crops.map(c => c.farmer_id))];
@@ -124,7 +124,7 @@ const BuyerDashboard = () => {
           </CardContent>
         </Card>
 
-        {/* Recommended Products - from Supabase */}
+        {/* Recommended Products - unified */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -135,7 +135,7 @@ const BuyerDashboard = () => {
           <CardContent>
             <div className="grid md:grid-cols-3 gap-6">
               {crops.slice(0, 3).map((crop) => (
-                <div key={crop.id} className="border border-border rounded-lg overflow-hidden hover:shadow-md transition-shadow">
+                <div key={`${crop.source}-${crop.id}`} className="border border-border rounded-lg overflow-hidden hover:shadow-md transition-shadow">
                   <CropImage cropName={crop.name} imageUrl={crop.image} className="w-full h-40" />
                   <div className="p-4 space-y-2">
                     <h3 className="font-semibold">{crop.name}</h3>

@@ -102,6 +102,8 @@ export function useAddListing() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['farmer-listings'] });
       queryClient.invalidateQueries({ queryKey: ['active-listings'] });
+      queryClient.invalidateQueries({ queryKey: ['unified-crops-farmer'] });
+      queryClient.invalidateQueries({ queryKey: ['unified-crops-all'] });
     },
   });
 }
@@ -123,6 +125,8 @@ export function useUpdateListing() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['farmer-listings'] });
       queryClient.invalidateQueries({ queryKey: ['active-listings'] });
+      queryClient.invalidateQueries({ queryKey: ['unified-crops-farmer'] });
+      queryClient.invalidateQueries({ queryKey: ['unified-crops-all'] });
     },
   });
 }
@@ -138,6 +142,8 @@ export function useDeleteListing() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['farmer-listings'] });
       queryClient.invalidateQueries({ queryKey: ['active-listings'] });
+      queryClient.invalidateQueries({ queryKey: ['unified-crops-farmer'] });
+      queryClient.invalidateQueries({ queryKey: ['unified-crops-all'] });
     },
   });
 }

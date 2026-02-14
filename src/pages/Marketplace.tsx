@@ -11,7 +11,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
 import StartBargainingModal from '@/components/bargaining/StartBargainingModal';
 import PlaceOrderModal from '@/components/orders/PlaceOrderModal';
-import { useAllCrops, CropRow } from '@/hooks/useCrops';
+import { useAllUnifiedCrops, UnifiedCrop } from '@/hooks/useUnifiedCrops';
 import CropImage from '@/components/CropImage';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
@@ -19,16 +19,16 @@ import { useQuery } from '@tanstack/react-query';
 const Marketplace = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
-  const [selectedCrop, setSelectedCrop] = useState<CropRow | null>(null);
+  const [selectedCrop, setSelectedCrop] = useState<UnifiedCrop | null>(null);
   const [bargainModalOpen, setBargainModalOpen] = useState(false);
   const [orderModalOpen, setOrderModalOpen] = useState(false);
-  const [orderCrop, setOrderCrop] = useState<CropRow | null>(null);
+  const [orderCrop, setOrderCrop] = useState<UnifiedCrop | null>(null);
   const { user, profile, isAuthenticated } = useAuth();
   const { t } = useLanguage();
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const { data: crops = [], isLoading } = useAllCrops();
+  const { data: crops = [], isLoading } = useAllUnifiedCrops();
 
   // Fetch farmer profiles for display names
   const farmerIds = [...new Set(crops.map(c => c.farmer_id))];
@@ -58,7 +58,7 @@ const Marketplace = () => {
 
   const categories = ['all', ...Array.from(new Set(crops.map(c => c.category)))];
 
-  const handleBargain = (crop: CropRow) => {
+  const handleBargain = (crop: UnifiedCrop) => {
     if (!isAuthenticated) {
       toast({ title: t.marketplace.loginRequired, description: t.marketplace.loginToBargain });
       navigate('/auth?role=buyer');
@@ -72,7 +72,7 @@ const Marketplace = () => {
     setBargainModalOpen(true);
   };
 
-  const handlePlaceOrder = (crop: CropRow) => {
+  const handlePlaceOrder = (crop: UnifiedCrop) => {
     if (!isAuthenticated) {
       toast({ title: t.marketplace.loginRequired, description: t.marketplace.loginToBargain });
       navigate('/auth?role=buyer');
@@ -132,7 +132,7 @@ const Marketplace = () => {
               {filteredCrops.map((crop) => {
                 const farmerName = farmerNameMap[crop.farmer_id] || 'Farmer';
                 return (
-                  <Card key={crop.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+                  <Card key={`${crop.source}-${crop.id}`} className="overflow-hidden hover:shadow-lg transition-shadow">
                     <CropImage
                       cropName={crop.name}
                       imageUrl={crop.image}
@@ -192,7 +192,7 @@ const Marketplace = () => {
       {selectedCrop && (
         <StartBargainingModal
           crop={{
-            id: selectedCrop.id,
+            id: selectedCrop.source === 'crops' ? selectedCrop.id : (selectedCrop.crop_id || selectedCrop.id),
             farmer_id: selectedCrop.farmer_id,
             name: selectedCrop.name,
             price: selectedCrop.price,
@@ -214,7 +214,7 @@ const Marketplace = () => {
       {orderCrop && (
         <PlaceOrderModal
           crop={{
-            id: orderCrop.id,
+            id: orderCrop.source === 'crops' ? orderCrop.id : (orderCrop.crop_id || orderCrop.id),
             farmer_id: orderCrop.farmer_id,
             name: orderCrop.name,
             price: orderCrop.price,

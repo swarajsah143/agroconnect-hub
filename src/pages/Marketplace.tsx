@@ -192,7 +192,7 @@ const Marketplace = () => {
       {selectedCrop && (
         <StartBargainingModal
           crop={{
-            id: selectedCrop.source === 'crops' ? selectedCrop.id : (selectedCrop.crop_id || selectedCrop.id),
+            id: selectedCrop.source === 'crops' ? selectedCrop.id : (selectedCrop.crop_id || ''),
             farmer_id: selectedCrop.farmer_id,
             name: selectedCrop.name,
             price: selectedCrop.price,
@@ -214,7 +214,7 @@ const Marketplace = () => {
       {orderCrop && (
         <PlaceOrderModal
           crop={{
-            id: orderCrop.source === 'crops' ? orderCrop.id : (orderCrop.crop_id || orderCrop.id),
+            id: orderCrop.source === 'crops' ? orderCrop.id : (orderCrop.crop_id || ''),
             farmer_id: orderCrop.farmer_id,
             name: orderCrop.name,
             price: orderCrop.price,

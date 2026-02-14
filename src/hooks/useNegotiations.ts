@@ -110,18 +110,20 @@ export const useNegotiations = () => {
   ) => {
     if (!user) return { error: 'Not authenticated' };
 
+    const insertData: any = {
+      buyer_id: user.id,
+      farmer_id: farmerId,
+      initial_price: initialPrice,
+      current_offer: offerPrice,
+      offered_by: user.id,
+      quantity,
+      status: 'pending' as const,
+      ...(cropId ? { crop_id: cropId } : {}),
+    };
+
     const { data, error } = await supabase
       .from('negotiations')
-      .insert({
-        crop_id: cropId,
-        buyer_id: user.id,
-        farmer_id: farmerId,
-        initial_price: initialPrice,
-        current_offer: offerPrice,
-        offered_by: user.id,
-        quantity,
-        status: 'pending'
-      })
+      .insert(insertData)
       .select()
       .single();
 

@@ -41,7 +41,7 @@ const PlaceOrderModal = ({ open, onOpenChange, crop, onSuccess }: PlaceOrderModa
     setSubmitting(true);
     const result = await placeOrder(
       crop.farmer_id,
-      crop.id,
+      crop.id || null,
       crop.name,
       Number(quantity),
       message

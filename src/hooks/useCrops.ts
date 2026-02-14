@@ -73,6 +73,8 @@ export function useAddCrop() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['farmer-crops'] });
       queryClient.invalidateQueries({ queryKey: ['all-crops'] });
+      queryClient.invalidateQueries({ queryKey: ['unified-crops-farmer'] });
+      queryClient.invalidateQueries({ queryKey: ['unified-crops-all'] });
     },
   });
 }
@@ -89,6 +91,8 @@ export function useUpdateCrop() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['farmer-crops'] });
       queryClient.invalidateQueries({ queryKey: ['all-crops'] });
+      queryClient.invalidateQueries({ queryKey: ['unified-crops-farmer'] });
+      queryClient.invalidateQueries({ queryKey: ['unified-crops-all'] });
     },
   });
 }
@@ -104,6 +108,8 @@ export function useDeleteCrop() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['farmer-crops'] });
       queryClient.invalidateQueries({ queryKey: ['all-crops'] });
+      queryClient.invalidateQueries({ queryKey: ['unified-crops-farmer'] });
+      queryClient.invalidateQueries({ queryKey: ['unified-crops-all'] });
     },
   });
 }

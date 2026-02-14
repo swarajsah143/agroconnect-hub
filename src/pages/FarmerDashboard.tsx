@@ -14,18 +14,22 @@ import NegotiationsList from '@/components/bargaining/NegotiationsList';
 import IncomingOrders from '@/components/orders/IncomingOrders';
 import CropCatalogBrowser from '@/components/farmer/CropCatalogBrowser';
 import { useToast } from '@/hooks/use-toast';
-import { useFarmerCrops, useAddCrop, useUpdateCrop, useDeleteCrop } from '@/hooks/useCrops';
+import { useAddCrop, useUpdateCrop, useDeleteCrop } from '@/hooks/useCrops';
+import { useDeleteListing } from '@/hooks/useCropCatalog';
+import { useFarmerUnifiedCrops, UnifiedCrop } from '@/hooks/useUnifiedCrops';
 import { getCropImage } from '@/utils/cropImages';
 import CropImage from '@/components/CropImage';
+import { Badge } from '@/components/ui/badge';
 
 const FarmerDashboard = () => {
   const { user, profile, loading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { data: crops = [], isLoading: cropsLoading } = useFarmerCrops();
+  const { data: allCrops = [], isLoading: cropsLoading } = useFarmerUnifiedCrops();
   const addCrop = useAddCrop();
   const updateCrop = useUpdateCrop();
   const deleteCrop = useDeleteCrop();
+  const deleteListing = useDeleteListing();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingCropId, setEditingCropId] = useState<string | null>(null);
 
@@ -94,7 +98,8 @@ const FarmerDashboard = () => {
     setDialogOpen(false);
   };
 
-  const handleEdit = (crop: typeof crops[0]) => {
+  const handleEdit = (crop: UnifiedCrop) => {
+    if (crop.source !== 'crops') return; // Only edit custom crops via this form
     setEditingCropId(crop.id);
     setFormData({
       name: crop.name,
@@ -108,11 +113,18 @@ const FarmerDashboard = () => {
     setDialogOpen(true);
   };
 
-  const handleDelete = (id: string) => {
-    deleteCrop.mutate(id, {
-      onSuccess: () => toast({ title: 'Crop deleted successfully' }),
-      onError: (err: any) => toast({ variant: 'destructive', title: 'Error', description: err.message }),
-    });
+  const handleDelete = (crop: UnifiedCrop) => {
+    if (crop.source === 'listing') {
+      deleteListing.mutate(crop.id, {
+        onSuccess: () => toast({ title: 'Listing removed successfully' }),
+        onError: (err: any) => toast({ variant: 'destructive', title: 'Error', description: err.message }),
+      });
+    } else {
+      deleteCrop.mutate(crop.id, {
+        onSuccess: () => toast({ title: 'Crop deleted successfully' }),
+        onError: (err: any) => toast({ variant: 'destructive', title: 'Error', description: err.message }),
+      });
+    }
   };
 
   if (loading || cropsLoading) {
@@ -138,12 +150,12 @@ const FarmerDashboard = () => {
             <DialogTrigger asChild>
               <Button onClick={() => { setEditingCropId(null); resetForm(); }}>
                 <Plus className="w-4 h-4 mr-2" />
-                Add New Crop
+                Add Custom Crop
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>{editingCropId ? 'Edit Crop' : 'Add New Crop'}</DialogTitle>
+                <DialogTitle>{editingCropId ? 'Edit Crop' : 'Add Custom Crop'}</DialogTitle>
               </DialogHeader>
               <div className="space-y-4 py-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -215,11 +227,11 @@ const FarmerDashboard = () => {
         <div className="grid md:grid-cols-4 gap-6 mb-8">
           <Card>
             <CardHeader className="pb-3"><CardTitle className="text-sm font-medium text-muted-foreground">Total Listings</CardTitle></CardHeader>
-            <CardContent><p className="text-3xl font-bold">{crops.length}</p></CardContent>
+            <CardContent><p className="text-3xl font-bold">{allCrops.length}</p></CardContent>
           </Card>
           <Card>
             <CardHeader className="pb-3"><CardTitle className="text-sm font-medium text-muted-foreground">Total Quantity</CardTitle></CardHeader>
-            <CardContent><p className="text-3xl font-bold">{crops.reduce((acc, c) => acc + c.quantity, 0)} kg</p></CardContent>
+            <CardContent><p className="text-3xl font-bold">{allCrops.reduce((acc, c) => acc + c.quantity, 0)} kg</p></CardContent>
           </Card>
           <Card>
             <CardHeader className="pb-3"><CardTitle className="text-sm font-medium text-muted-foreground">Inquiries</CardTitle></CardHeader>
@@ -227,17 +239,17 @@ const FarmerDashboard = () => {
           </Card>
           <Card>
             <CardHeader className="pb-3"><CardTitle className="text-sm font-medium text-muted-foreground">Total Value</CardTitle></CardHeader>
-            <CardContent><p className="text-3xl font-bold">₹{crops.reduce((acc, c) => acc + (c.quantity * c.price), 0).toLocaleString()}</p></CardContent>
+            <CardContent><p className="text-3xl font-bold">₹{allCrops.reduce((acc, c) => acc + (c.quantity * c.price), 0).toLocaleString()}</p></CardContent>
           </Card>
         </div>
 
-        {/* Crops List */}
+        {/* All Listings (unified) */}
         <Card>
-          <CardHeader><CardTitle>My Crops</CardTitle></CardHeader>
+          <CardHeader><CardTitle>My Listings</CardTitle></CardHeader>
           <CardContent>
-            {crops.length === 0 ? (
+            {allCrops.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
-                <p className="mb-4">You haven't added any crops yet</p>
+                <p className="mb-4">You haven't added any crops yet. Use the catalog below or add a custom crop.</p>
                 <Button onClick={() => setDialogOpen(true)}>
                   <Plus className="w-4 h-4 mr-2" />
                   Add Your First Crop
@@ -245,12 +257,17 @@ const FarmerDashboard = () => {
               </div>
             ) : (
               <div className="space-y-4">
-                {crops.map((crop) => (
-                  <div key={crop.id} className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors">
+                {allCrops.map((crop) => (
+                  <div key={`${crop.source}-${crop.id}`} className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors">
                     <div className="flex items-center gap-4 flex-1">
                       <CropImage cropName={crop.name} imageUrl={crop.image} className="w-16 h-16 rounded" />
                       <div className="flex-1">
-                        <h3 className="font-semibold text-lg">{crop.name}</h3>
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-semibold text-lg">{crop.name}</h3>
+                          <Badge variant={crop.source === 'listing' ? 'default' : 'secondary'} className="text-xs">
+                            {crop.source === 'listing' ? 'Catalog' : 'Custom'}
+                          </Badge>
+                        </div>
                         <p className="text-sm text-muted-foreground">{crop.category} • {crop.location}</p>
                       </div>
                       <div className="text-right">
@@ -259,8 +276,10 @@ const FarmerDashboard = () => {
                       </div>
                     </div>
                     <div className="flex items-center gap-2 ml-4">
-                      <Button variant="ghost" size="sm" onClick={() => handleEdit(crop)}><Edit className="w-4 h-4" /></Button>
-                      <Button variant="ghost" size="sm" onClick={() => handleDelete(crop.id)}><Trash2 className="w-4 h-4" /></Button>
+                      {crop.source === 'crops' && (
+                        <Button variant="ghost" size="sm" onClick={() => handleEdit(crop)}><Edit className="w-4 h-4" /></Button>
+                      )}
+                      <Button variant="ghost" size="sm" onClick={() => handleDelete(crop)}><Trash2 className="w-4 h-4" /></Button>
                     </div>
                   </div>
                 ))}

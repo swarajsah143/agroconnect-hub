@@ -1,238 +1,283 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth, UserRole } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
-import { Sprout, Mail, ArrowLeft, Loader2 } from 'lucide-react';
+import { Sprout, Mail, ArrowLeft, Loader2, ShieldCheck, Timer } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
+type RegistrationStep = 'form' | 'otp';
+
+const OTP_EXPIRY_SECONDS = 300; // 5 minutes
 const RESEND_COOLDOWN_SECONDS = 30;
-
-type AuthStep = 'email' | 'otp' | 'profile';
-
-const dashboardMap: Record<UserRole, string> = {
-  farmer: '/farmer-dashboard',
-  buyer: '/buyer-dashboard',
-  expert: '/expert-dashboard',
-};
-
-const isValidEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+const MAX_OTP_ATTEMPTS = 5;
 
 const Auth = () => {
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
-  const { toast } = useToast();
-  const { user, profile, loading, sendOtp, verifyOtp, completeProfile, logout } = useAuth();
-
+  const defaultMode = searchParams.get('mode') === 'register' ? 'register' : 'login';
   const defaultRole = (searchParams.get('role') as UserRole) || 'farmer';
-  const [step, setStep] = useState<AuthStep>('email');
-  const [email, setEmail] = useState('');
-  const [otp, setOtp] = useState('');
-  const [name, setName] = useState('');
+
+  const [mode, setMode] = useState<'login' | 'register'>(defaultMode);
   const [role, setRole] = useState<UserRole>(defaultRole);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  // OTP states
+  const [registrationStep, setRegistrationStep] = useState<RegistrationStep>('form');
+  const [otp, setOtp] = useState('');
   const [sendingOtp, setSendingOtp] = useState(false);
   const [verifyingOtp, setVerifyingOtp] = useState(false);
-  const [savingProfile, setSavingProfile] = useState(false);
+  const [otpAttempts, setOtpAttempts] = useState(0);
   const [resendCooldown, setResendCooldown] = useState(0);
-  const resendTimerRef = useRef<number | null>(null);
+  const [expiryCountdown, setExpiryCountdown] = useState(OTP_EXPIRY_SECONDS);
+  const resendTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const expiryTimerRef = useRef<NodeJS.Timeout | null>(null);
 
+  const { login, register } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  // Resend cooldown timer
   useEffect(() => {
-    if (profile) {
-      navigate(dashboardMap[profile.role], { replace: true });
-      return;
-    }
-
-    if (!loading && user && !profile) {
-      setStep('profile');
-    }
-  }, [user, profile, loading, navigate]);
-
-  useEffect(() => {
-    if (resendCooldown <= 0) {
-      if (resendTimerRef.current) {
-        window.clearInterval(resendTimerRef.current);
-        resendTimerRef.current = null;
-      }
-      return;
-    }
-
-    resendTimerRef.current = window.setInterval(() => {
-      setResendCooldown((prev) => {
+    if (resendCooldown <= 0) return;
+    resendTimerRef.current = setInterval(() => {
+      setResendCooldown(prev => {
         if (prev <= 1) {
-          if (resendTimerRef.current) {
-            window.clearInterval(resendTimerRef.current);
-            resendTimerRef.current = null;
-          }
+          if (resendTimerRef.current) clearInterval(resendTimerRef.current);
           return 0;
         }
         return prev - 1;
       });
     }, 1000);
-
-    return () => {
-      if (resendTimerRef.current) {
-        window.clearInterval(resendTimerRef.current);
-        resendTimerRef.current = null;
-      }
-    };
+    return () => { if (resendTimerRef.current) clearInterval(resendTimerRef.current); };
   }, [resendCooldown]);
 
-  const handleSendOtp = async (event: React.FormEvent) => {
-    event.preventDefault();
-
-    const normalizedEmail = email.trim().toLowerCase();
-    if (!isValidEmail(normalizedEmail)) {
-      toast({
-        variant: 'destructive',
-        title: 'Invalid email',
-        description: 'Enter a valid email address.',
+  // OTP expiry countdown
+  useEffect(() => {
+    if (registrationStep !== 'otp') return;
+    setExpiryCountdown(OTP_EXPIRY_SECONDS);
+    expiryTimerRef.current = setInterval(() => {
+      setExpiryCountdown(prev => {
+        if (prev <= 1) {
+          if (expiryTimerRef.current) clearInterval(expiryTimerRef.current);
+          return 0;
+        }
+        return prev - 1;
       });
-      return;
-    }
+    }, 1000);
+    return () => { if (expiryTimerRef.current) clearInterval(expiryTimerRef.current); };
+  }, [registrationStep]);
 
-    setSendingOtp(true);
-    const result = await sendOtp(normalizedEmail);
-    setSendingOtp(false);
-
-    if (!result.success) {
-      toast({
-        variant: 'destructive',
-        title: 'OTP send failed',
-        description: result.error || 'Failed to send OTP. Try again.',
-      });
-      return;
-    }
-
-    setEmail(normalizedEmail);
-    setOtp('');
-    setResendCooldown(RESEND_COOLDOWN_SECONDS);
-    setStep('otp');
-    toast({
-      title: 'OTP sent',
-      description: 'Check your inbox and spam folder for the 6-digit code.',
-    });
+  const formatTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${s.toString().padStart(2, '0')}`;
   };
 
-  const handleVerifyOtp = async () => {
+  const sendOTP = async () => {
+    setSendingOtp(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('send-otp', {
+        body: { email },
+      });
+
+      if (error) throw error;
+
+      if (data.error) {
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: data.error,
+        });
+        return false;
+      }
+
+      toast({
+        title: 'OTP Sent!',
+        description: 'Check your email for the verification code.',
+      });
+      setResendCooldown(RESEND_COOLDOWN_SECONDS);
+      return true;
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to send OTP';
+      toast({
+        variant: 'destructive',
+        title: 'Invalid or unreachable email',
+        description: errorMessage,
+      });
+      return false;
+    } finally {
+      setSendingOtp(false);
+    }
+  };
+
+  const verifyOTP = async (): Promise<boolean> => {
+    setVerifyingOtp(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('verify-otp', {
+        body: { email, otp },
+      });
+
+      if (error) throw error;
+
+      if (data.error) {
+        setOtpAttempts(prev => prev + 1);
+        toast({
+          variant: 'destructive',
+          title: 'Verification Failed',
+          description: data.error,
+        });
+        return false;
+      }
+
+      return true;
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to verify OTP';
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: errorMessage,
+      });
+      return false;
+    } finally {
+      setVerifyingOtp(false);
+    }
+  };
+
+  const handleRegistrationFormSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!email || !password || !name) {
+      toast({
+        variant: 'destructive',
+        title: 'Missing Fields',
+        description: 'Please fill in all fields.',
+      });
+      return;
+    }
+
+    // OTP is mandatory for ALL signups
+    const success = await sendOTP();
+    if (success) {
+      setOtpAttempts(0);
+      setOtp('');
+      setRegistrationStep('otp');
+    }
+  };
+
+  const handleOtpVerifyAndRegister = async () => {
     if (otp.length !== 6) {
       toast({
         variant: 'destructive',
         title: 'Invalid OTP',
-        description: 'Enter the 6-digit code sent to your email.',
+        description: 'Please enter the 6-digit code.',
       });
       return;
     }
 
-    setVerifyingOtp(true);
-    const result = await verifyOtp(email, otp);
-    setVerifyingOtp(false);
-
-    if (!result.success) {
+    if (otpAttempts >= MAX_OTP_ATTEMPTS) {
       toast({
         variant: 'destructive',
-        title: 'Verification failed',
-        description: result.error || 'Invalid or expired OTP. Try again.',
+        title: 'Too many attempts',
+        description: 'Please request a new OTP.',
       });
       return;
     }
 
-    if (result.needsProfile) {
-      setStep('profile');
+    if (expiryCountdown <= 0) {
       toast({
-        title: 'Email verified',
-        description: 'Complete your account to continue.',
+        variant: 'destructive',
+        title: 'OTP Expired',
+        description: 'Please request a new verification code.',
       });
       return;
     }
 
-    const nextRole = result.profile?.role ?? profile?.role;
-    if (nextRole) {
-      toast({
-        title: 'Login successful',
-        description: 'You are now signed in.',
-      });
-      navigate(dashboardMap[nextRole], { replace: true });
+    const verified = await verifyOTP();
+    if (!verified) return;
+
+    setLoading(true);
+    try {
+      const result = await register(email, password, name, role);
+      if (result.success) {
+        toast({
+          title: 'Account created!',
+          description: 'Your email has been verified and account created successfully.',
+        });
+        const dashboardMap = {
+          farmer: '/farmer-dashboard',
+          buyer: '/buyer-dashboard',
+          expert: '/expert-dashboard'
+        };
+        navigate(dashboardMap[role]);
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Registration failed',
+          description: result.error || 'Could not create account. Please try again.',
+        });
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const result = await login(email, password, role);
+      if (result.success) {
+        toast({
+          title: 'Welcome back!',
+          description: 'You have successfully logged in.',
+        });
+        const dashboardMap = {
+          farmer: '/farmer-dashboard',
+          buyer: '/buyer-dashboard',
+          expert: '/expert-dashboard'
+        };
+        navigate(dashboardMap[role]);
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Login failed',
+          description: result.error || 'Invalid credentials. Please try again.',
+        });
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleResendOtp = async () => {
     if (resendCooldown > 0) return;
-
-    setSendingOtp(true);
-    const result = await sendOtp(email);
-    setSendingOtp(false);
-
-    if (!result.success) {
-      toast({
-        variant: 'destructive',
-        title: 'OTP send failed',
-        description: result.error || 'Failed to send OTP. Try again.',
-      });
-      return;
-    }
-
     setOtp('');
-    setResendCooldown(RESEND_COOLDOWN_SECONDS);
-    toast({
-      title: 'OTP resent',
-      description: 'A new code has been sent to your email.',
-    });
+    setOtpAttempts(0);
+    await sendOTP();
   };
 
-  const handleCompleteProfile = async (event: React.FormEvent) => {
-    event.preventDefault();
-
-    if (!name.trim()) {
-      toast({
-        variant: 'destructive',
-        title: 'Missing name',
-        description: 'Enter your full name to finish setup.',
-      });
-      return;
-    }
-
-    setSavingProfile(true);
-    const result = await completeProfile(name.trim(), role);
-    setSavingProfile(false);
-
-    if (!result.success || !result.profile) {
-      toast({
-        variant: 'destructive',
-        title: 'Setup failed',
-        description: result.error || 'Could not complete your account. Try again.',
-      });
-      return;
-    }
-
-    toast({
-      title: 'Account ready',
-      description: 'Your account has been created successfully.',
-    });
-    navigate(dashboardMap[result.profile.role], { replace: true });
-  };
-
-  const handleBackToEmail = async () => {
+  const handleBackToForm = () => {
+    setRegistrationStep('form');
     setOtp('');
-    setStep('email');
+    setOtpAttempts(0);
     setResendCooldown(0);
-    if (user && !profile) {
-      await logout();
-    }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-accent/5 flex items-center justify-center p-4">
-        <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
-      </div>
-    );
-  }
+  // OTP Verification Screen
+  if (mode === 'register' && registrationStep === 'otp') {
+    const isExpired = expiryCountdown <= 0;
+    const maxAttemptsReached = otpAttempts >= MAX_OTP_ATTEMPTS;
 
-  if (step === 'otp') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-accent/5 flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
@@ -242,14 +287,19 @@ const Auth = () => {
                 <Mail className="w-6 h-6 text-primary" />
               </div>
             </div>
-            <CardTitle className="text-2xl font-serif">Enter your OTP</CardTitle>
+            <CardTitle className="text-2xl font-serif">Verify Your Email</CardTitle>
             <CardDescription>
-              We sent a 6-digit code to <strong>{email}</strong>
+              We've sent a 6-digit code to <strong>{email}</strong>
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="flex justify-center">
-              <InputOTP maxLength={6} value={otp} onChange={setOtp} disabled={verifyingOtp || sendingOtp}>
+              <InputOTP
+                maxLength={6}
+                value={otp}
+                onChange={(value) => setOtp(value)}
+                disabled={isExpired || maxAttemptsReached}
+              >
                 <InputOTPGroup>
                   <InputOTPSlot index={0} />
                   <InputOTPSlot index={1} />
@@ -261,14 +311,40 @@ const Auth = () => {
               </InputOTP>
             </div>
 
-            <Button className="w-full" onClick={handleVerifyOtp} disabled={verifyingOtp || otp.length !== 6}>
-              {verifyingOtp ? (
+            {/* Countdown & attempts info */}
+            <div className="flex items-center justify-center gap-4 text-sm text-muted-foreground">
+              <div className="flex items-center gap-1">
+                <Timer className="w-4 h-4" />
+                <span className={isExpired ? 'text-destructive font-medium' : ''}>
+                  {isExpired ? 'Expired' : `Expires in ${formatTime(expiryCountdown)}`}
+                </span>
+              </div>
+              <div className="flex items-center gap-1">
+                <ShieldCheck className="w-4 h-4" />
+                <span className={maxAttemptsReached ? 'text-destructive font-medium' : ''}>
+                  {MAX_OTP_ATTEMPTS - otpAttempts} attempts left
+                </span>
+              </div>
+            </div>
+
+            {(isExpired || maxAttemptsReached) && (
+              <p className="text-center text-sm text-destructive font-medium">
+                {isExpired ? 'Your OTP has expired.' : 'Too many failed attempts.'} Please request a new code.
+              </p>
+            )}
+
+            <Button
+              className="w-full"
+              onClick={handleOtpVerifyAndRegister}
+              disabled={verifyingOtp || loading || otp.length !== 6 || isExpired || maxAttemptsReached}
+            >
+              {(verifyingOtp || loading) ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Verifying...
+                  {verifyingOtp ? 'Verifying...' : 'Creating Account...'}
                 </>
               ) : (
-                'Verify OTP'
+                'Verify & Create Account'
               )}
             </Button>
 
@@ -283,76 +359,17 @@ const Auth = () => {
                   ? 'Sending...'
                   : resendCooldown > 0
                     ? `Resend available in ${resendCooldown}s`
-                    : 'Didn\'t receive the code? Resend'}
+                    : "Didn't receive code? Resend"}
               </button>
               <button
                 type="button"
-                onClick={handleBackToEmail}
+                onClick={handleBackToForm}
                 className="text-muted-foreground hover:text-foreground flex items-center justify-center gap-1"
               >
                 <ArrowLeft className="w-4 h-4" />
-                Use a different email
+                Back to registration
               </button>
             </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  if (step === 'profile') {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-accent/5 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader className="space-y-1 text-center">
-            <div className="flex justify-center mb-4">
-              <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-                <Sprout className="w-6 h-6 text-primary" />
-              </div>
-            </div>
-            <CardTitle className="text-2xl font-serif">Complete your account</CardTitle>
-            <CardDescription>
-              Your email is verified. Add your details to continue.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleCompleteProfile} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Full Name</Label>
-                <Input
-                  id="name"
-                  value={name}
-                  onChange={(event) => setName(event.target.value)}
-                  placeholder="Enter your full name"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="role">I am a</Label>
-                <Select value={role} onValueChange={(value) => setRole(value as UserRole)}>
-                  <SelectTrigger id="role">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="farmer">Farmer</SelectItem>
-                    <SelectItem value="buyer">Buyer</SelectItem>
-                    <SelectItem value="expert">Agricultural Expert</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <Button type="submit" className="w-full" disabled={savingProfile}>
-                {savingProfile ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  'Continue'
-                )}
-              </Button>
-            </form>
           </CardContent>
         </Card>
       </div>
@@ -370,38 +387,87 @@ const Auth = () => {
           </div>
           <CardTitle className="text-2xl font-serif">Welcome to AgroConnect</CardTitle>
           <CardDescription>
-            Sign in with a one-time code sent to your email.
+            {mode === 'login' ? 'Sign in to your account' : 'Create a new account'}
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSendOtp} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                required
-                placeholder="Enter your email"
-              />
-            </div>
+          <Tabs value={mode} onValueChange={(v) => setMode(v as 'login' | 'register')}>
+            <TabsList className="grid w-full grid-cols-2 mb-6">
+              <TabsTrigger value="login">Login</TabsTrigger>
+              <TabsTrigger value="register">Register</TabsTrigger>
+            </TabsList>
 
-            <Button type="submit" className="w-full" disabled={sendingOtp}>
-              {sendingOtp ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Sending OTP...
-                </>
-              ) : (
-                'Send OTP'
+            <form onSubmit={mode === 'login' ? handleLogin : handleRegistrationFormSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="role">I am a</Label>
+                <Select value={role} onValueChange={(v) => setRole(v as UserRole)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="farmer">Farmer</SelectItem>
+                    <SelectItem value="buyer">Buyer</SelectItem>
+                    <SelectItem value="expert">Agricultural Expert</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {mode === 'register' && (
+                <div className="space-y-2">
+                  <Label htmlFor="name">Full Name</Label>
+                  <Input
+                    id="name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required
+                    placeholder="Enter your full name"
+                  />
+                </div>
               )}
-            </Button>
-          </form>
 
-          <p className="mt-4 text-center text-sm text-muted-foreground">
-            New users will create their account automatically after email verification.
-          </p>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  placeholder="Enter your email"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  placeholder="Enter your password"
+                />
+              </div>
+
+              <Button type="submit" className="w-full" disabled={loading || sendingOtp}>
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Please wait...
+                  </>
+                ) : sendingOtp ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Sending OTP...
+                  </>
+                ) : mode === 'login' ? (
+                  'Sign In'
+                ) : (
+                  'Continue'
+                )}
+              </Button>
+            </form>
+          </Tabs>
 
           <div className="mt-4 text-center text-sm text-muted-foreground">
             <button

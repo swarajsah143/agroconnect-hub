@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Session, User } from '@supabase/supabase-js';
+import { User, Session } from '@supabase/supabase-js';
 
 export type UserRole = 'farmer' | 'buyer' | 'expert';
 
@@ -11,27 +11,12 @@ export interface UserProfile {
   role: UserRole;
 }
 
-interface AuthResult {
-  success: boolean;
-  error?: string;
-}
-
-interface VerifyOtpResult extends AuthResult {
-  needsProfile?: boolean;
-  profile?: UserProfile | null;
-}
-
-interface ProfileResult extends AuthResult {
-  profile?: UserProfile;
-}
-
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   profile: UserProfile | null;
-  sendOtp: (email: string) => Promise<AuthResult>;
-  verifyOtp: (email: string, token: string) => Promise<VerifyOtpResult>;
-  completeProfile: (name: string, role: UserRole) => Promise<ProfileResult>;
+  login: (email: string, password: string, role: UserRole) => Promise<{ success: boolean; error?: string }>;
+  register: (email: string, password: string, name: string, role: UserRole) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   isAuthenticated: boolean;
   loading: boolean;
@@ -45,119 +30,109 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchProfile = async (userId: string): Promise<UserProfile | null> => {
+  const fetchProfile = async (userId: string) => {
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
       .eq('user_id', userId)
-      .maybeSingle();
-
-    if (error) {
-      setProfile(null);
-      return null;
+      .single();
+    
+    if (data && !error) {
+      setProfile(data as UserProfile);
     }
-
-    const nextProfile = (data as UserProfile | null) ?? null;
-    setProfile(nextProfile);
-    return nextProfile;
+    return data as UserProfile | null;
   };
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      setSession(nextSession);
-      setUser(nextSession?.user ?? null);
-
-      if (nextSession?.user) {
-        setTimeout(() => {
-          fetchProfile(nextSession.user.id).finally(() => setLoading(false));
-        }, 0);
-      } else {
-        setProfile(null);
+    // Set up auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        // Defer profile fetch to avoid deadlock
+        if (session?.user) {
+          setTimeout(() => {
+            fetchProfile(session.user.id);
+          }, 0);
+        } else {
+          setProfile(null);
+        }
+        
         setLoading(false);
       }
-    });
+    );
 
-    supabase.auth.getSession().then(({ data: { session: nextSession } }) => {
-      setSession(nextSession);
-      setUser(nextSession?.user ?? null);
-
-      if (nextSession?.user) {
-        fetchProfile(nextSession.user.id).finally(() => setLoading(false));
-      } else {
-        setProfile(null);
-        setLoading(false);
+    // THEN check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      
+      if (session?.user) {
+        fetchProfile(session.user.id);
       }
+      setLoading(false);
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
-  const sendOtp = async (email: string): Promise<AuthResult> => {
-    const { error } = await supabase.auth.signInWithOtp({
+  const register = async (email: string, password: string, name: string, role: UserRole): Promise<{ success: boolean; error?: string }> => {
+    const redirectUrl = `${window.location.origin}/`;
+    
+    const { data, error } = await supabase.auth.signUp({
       email,
+      password,
       options: {
-        shouldCreateUser: true,
-      },
+        emailRedirectTo: redirectUrl
+      }
     });
-
-    if (error) {
-      return { success: false, error: 'Failed to send OTP. Try again.' };
-    }
-
-    return { success: true };
-  };
-
-  const verifyOtp = async (email: string, token: string): Promise<VerifyOtpResult> => {
-    const { data, error } = await supabase.auth.verifyOtp({
-      email,
-      token,
-      type: 'email',
-    });
-
-    if (error) {
-      return { success: false, error: 'Invalid or expired OTP. Try again.' };
-    }
-
-    const verifiedUser = data.user ?? data.session?.user;
-    if (!verifiedUser) {
-      return { success: false, error: 'Could not verify OTP. Try again.' };
-    }
-
-    const nextProfile = await fetchProfile(verifiedUser.id);
-    return {
-      success: true,
-      needsProfile: !nextProfile,
-      profile: nextProfile,
-    };
-  };
-
-  const completeProfile = async (name: string, role: UserRole): Promise<ProfileResult> => {
-    if (!user) {
-      return { success: false, error: 'Please verify your email first.' };
-    }
-
-    const existingProfile = await fetchProfile(user.id);
-    if (existingProfile) {
-      return { success: true, profile: existingProfile };
-    }
-
-    const { data, error } = await supabase
-      .from('profiles')
-      .insert({
-        user_id: user.id,
-        name,
-        role,
-      })
-      .select()
-      .single();
 
     if (error) {
       return { success: false, error: error.message };
     }
 
-    const nextProfile = data as UserProfile;
-    setProfile(nextProfile);
-    return { success: true, profile: nextProfile };
+    if (data.user) {
+      // Create profile
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert({
+          user_id: data.user.id,
+          name,
+          role
+        });
+
+      if (profileError) {
+        return { success: false, error: profileError.message };
+      }
+      
+      await fetchProfile(data.user.id);
+    }
+
+    return { success: true };
+  };
+
+  const login = async (email: string, password: string, role: UserRole): Promise<{ success: boolean; error?: string }> => {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    });
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    if (data.user) {
+      const profileData = await fetchProfile(data.user.id);
+      
+      // Verify role matches
+      if (profileData && profileData.role !== role) {
+        await supabase.auth.signOut();
+        return { success: false, error: `This account is registered as a ${profileData.role}, not a ${role}.` };
+      }
+    }
+
+    return { success: true };
   };
 
   const logout = async () => {
@@ -168,19 +143,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        session,
-        profile,
-        sendOtp,
-        verifyOtp,
-        completeProfile,
-        logout,
-        isAuthenticated: !!user && !!profile,
-        loading,
-      }}
-    >
+    <AuthContext.Provider value={{ 
+      user, 
+      session,
+      profile,
+      login, 
+      register, 
+      logout, 
+      isAuthenticated: !!user && !!profile,
+      loading
+    }}>
       {children}
     </AuthContext.Provider>
   );

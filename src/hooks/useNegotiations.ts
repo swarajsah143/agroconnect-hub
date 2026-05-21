@@ -147,9 +147,11 @@ export const useNegotiations = () => {
     negotiationId: string, 
     updates: Partial<Negotiation>
   ) => {
+    // Strip joined relations that aren't actual columns
+    const { buyer_profile, farmer_profile, crop, ...columnUpdates } = updates as Partial<Negotiation>;
     const { error } = await supabase
       .from('negotiations')
-      .update(updates)
+      .update(columnUpdates as never)
       .eq('id', negotiationId);
 
     return { error: error?.message };

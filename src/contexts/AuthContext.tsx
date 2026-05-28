@@ -77,6 +77,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        if (event === 'INITIAL_SESSION') return;
+
         // Defer async profile loading so Supabase auth event handling never blocks.
         setTimeout(() => {
           void applySession(session);

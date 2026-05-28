@@ -70,7 +70,7 @@ const FarmerDashboard = () => {
           toast({ title: 'Crop updated successfully!' });
           resetForm();
         },
-        onError: (err: any) => toast({ variant: 'destructive', title: 'Error', description: err.message }),
+        onError: (err: Error) => toast({ variant: 'destructive', title: 'Error', description: err.message }),
       });
     } else {
       addCrop.mutate({
@@ -88,7 +88,7 @@ const FarmerDashboard = () => {
           toast({ title: 'Crop added successfully!' });
           resetForm();
         },
-        onError: (err: any) => toast({ variant: 'destructive', title: 'Error', description: err.message }),
+        onError: (err: Error) => toast({ variant: 'destructive', title: 'Error', description: err.message }),
       });
     }
   };
@@ -118,12 +118,12 @@ const FarmerDashboard = () => {
     if (crop.source === 'listing') {
       deleteListing.mutate(crop.id, {
         onSuccess: () => toast({ title: 'Listing removed successfully' }),
-        onError: (err: any) => toast({ variant: 'destructive', title: 'Error', description: err.message }),
+        onError: (err: Error) => toast({ variant: 'destructive', title: 'Error', description: err.message }),
       });
     } else {
       deleteCrop.mutate(crop.id, {
         onSuccess: () => toast({ title: 'Crop deleted successfully' }),
-        onError: (err: any) => toast({ variant: 'destructive', title: 'Error', description: err.message }),
+        onError: (err: Error) => toast({ variant: 'destructive', title: 'Error', description: err.message }),
       });
     }
   };

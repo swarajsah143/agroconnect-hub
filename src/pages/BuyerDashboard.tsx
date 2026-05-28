@@ -27,7 +27,7 @@ const BuyerDashboard = () => {
       if (error) throw error;
       return data;
     },
-    enabled: farmerIds.length > 0,
+    enabled: !loading && !!user && farmerIds.length > 0,
   });
   const farmerNameMap = Object.fromEntries(profiles.map(p => [p.user_id, p.name]));
 
@@ -37,7 +37,7 @@ const BuyerDashboard = () => {
     }
   }, [user, profile, loading, navigate]);
 
-  if (loading) {
+  if (loading || !user || profile?.role !== 'buyer') {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />

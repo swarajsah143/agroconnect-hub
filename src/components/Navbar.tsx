@@ -8,7 +8,7 @@ import LanguageSelector from './LanguageSelector';
 import NotificationBell from './NotificationBell';
 
 const Navbar = () => {
-  const { user, logout, isAuthenticated } = useAuth();
+  const { profile, logout, isAuthenticated } = useAuth();
   const { t } = useLanguage();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -19,8 +19,8 @@ const Navbar = () => {
   };
 
   const getDashboardLink = () => {
-    if (!user) return '/';
-    switch (user.role) {
+    if (!profile) return '/';
+    switch (profile.role) {
       case 'farmer':
         return '/farmer-dashboard';
       case 'buyer':

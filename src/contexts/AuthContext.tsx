@@ -35,46 +35,66 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       .from('profiles')
       .select('*')
       .eq('user_id', userId)
-      .single();
+      .maybeSingle();
     
-    if (data && !error) {
-      setProfile(data as UserProfile);
+    if (error) {
+      console.error('Failed to fetch profile:', error.message);
+      return null;
     }
+
     return data as UserProfile | null;
   };
 
+  const loadProfile = async (userId: string) => {
+    const profileData = await fetchProfile(userId);
+    setProfile(profileData);
+    return profileData;
+  };
+
   useEffect(() => {
+    let mounted = true;
+    let requestId = 0;
+
+    const applySession = async (nextSession: Session | null) => {
+      const currentRequest = ++requestId;
+      setSession(nextSession);
+      setUser(nextSession?.user ?? null);
+
+      if (!nextSession?.user) {
+        setProfile(null);
+        if (mounted && currentRequest === requestId) setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      const profileData = await fetchProfile(nextSession.user.id);
+
+      if (!mounted || currentRequest !== requestId) return;
+      setProfile(profileData);
+      setLoading(false);
+    };
+
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        // Defer profile fetch to avoid deadlock
-        if (session?.user) {
-          setTimeout(() => {
-            fetchProfile(session.user.id);
-          }, 0);
-        } else {
-          setProfile(null);
-        }
-        
-        setLoading(false);
+        if (event === 'INITIAL_SESSION') return;
+
+        // Defer async profile loading so Supabase auth event handling never blocks.
+        setTimeout(() => {
+          void applySession(session);
+        }, 0);
       }
     );
 
     // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        fetchProfile(session.user.id);
-      }
-      setLoading(false);
+      void applySession(session);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const register = async (email: string, password: string, name: string, role: UserRole): Promise<{ success: boolean; error?: string }> => {
@@ -84,6 +104,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       email,
       password,
       options: {
+        data: { name, role },
         emailRedirectTo: redirectUrl
       }
     });
@@ -106,7 +127,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { success: false, error: profileError.message };
       }
       
-      await fetchProfile(data.user.id);
+      await loadProfile(data.user.id);
     }
 
     return { success: true };
@@ -123,7 +144,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     if (data.user) {
-      const profileData = await fetchProfile(data.user.id);
+      let profileData = await loadProfile(data.user.id);
+
+      if (!profileData) {
+        const fallbackName = data.user.user_metadata?.name || data.user.email?.split('@')[0] || 'User';
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert({
+            user_id: data.user.id,
+            name: fallbackName,
+            role
+          });
+
+        if (profileError) {
+          await supabase.auth.signOut();
+          return { success: false, error: 'Your account exists, but its profile could not be restored. Please register again.' };
+        }
+
+        profileData = await loadProfile(data.user.id);
+      }
       
       // Verify role matches
       if (profileData && profileData.role !== role) {

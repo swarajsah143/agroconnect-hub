@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import Navbar from '@/components/Navbar';
@@ -43,10 +43,11 @@ const FarmerDashboard = () => {
     description: ''
   });
 
-  if (!loading && (!user || profile?.role !== 'farmer')) {
-    navigate('/auth?role=farmer');
-    return null;
-  }
+  useEffect(() => {
+    if (!loading && (!user || profile?.role !== 'farmer')) {
+      navigate('/auth?role=farmer');
+    }
+  }, [user, profile, loading, navigate]);
 
   const handleSubmit = async () => {
     if (!formData.name || !formData.quantity || !formData.price || !formData.location) {
@@ -69,7 +70,7 @@ const FarmerDashboard = () => {
           toast({ title: 'Crop updated successfully!' });
           resetForm();
         },
-        onError: (err: any) => toast({ variant: 'destructive', title: 'Error', description: err.message }),
+        onError: (err: Error) => toast({ variant: 'destructive', title: 'Error', description: err.message }),
       });
     } else {
       addCrop.mutate({
@@ -87,7 +88,7 @@ const FarmerDashboard = () => {
           toast({ title: 'Crop added successfully!' });
           resetForm();
         },
-        onError: (err: any) => toast({ variant: 'destructive', title: 'Error', description: err.message }),
+        onError: (err: Error) => toast({ variant: 'destructive', title: 'Error', description: err.message }),
       });
     }
   };
@@ -117,17 +118,17 @@ const FarmerDashboard = () => {
     if (crop.source === 'listing') {
       deleteListing.mutate(crop.id, {
         onSuccess: () => toast({ title: 'Listing removed successfully' }),
-        onError: (err: any) => toast({ variant: 'destructive', title: 'Error', description: err.message }),
+        onError: (err: Error) => toast({ variant: 'destructive', title: 'Error', description: err.message }),
       });
     } else {
       deleteCrop.mutate(crop.id, {
         onSuccess: () => toast({ title: 'Crop deleted successfully' }),
-        onError: (err: any) => toast({ variant: 'destructive', title: 'Error', description: err.message }),
+        onError: (err: Error) => toast({ variant: 'destructive', title: 'Error', description: err.message }),
       });
     }
   };
 
-  if (loading || cropsLoading) {
+  if (loading || cropsLoading || !user || profile?.role !== 'farmer') {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />

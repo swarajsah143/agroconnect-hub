@@ -38,7 +38,7 @@ export const useNegotiationChat = (negotiationId: string) => {
 
     // Subscribe to real-time messages
     const channel = supabase
-      .channel(`chat-${negotiationId}`)
+      .channel(`chat-${negotiationId}-${Math.random().toString(36).slice(2, 8)}`)
       .on(
         'postgres_changes',
         {

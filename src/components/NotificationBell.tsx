@@ -64,7 +64,6 @@ const NotificationBell = () => {
   useEffect(() => {
     if (!user || !profile) return;
     const isFarmer = profile.role === 'farmer';
-    const isBuyer = profile.role === 'buyer';
 
     // Listen for new negotiations
     const negotiationChannel = supabase

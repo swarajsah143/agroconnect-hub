@@ -1,0 +1,4 @@
+ALTER TABLE public.negotiations REPLICA IDENTITY FULL;
+ALTER TABLE public.negotiation_messages REPLICA IDENTITY FULL;
+ALTER TABLE public.orders REPLICA IDENTITY FULL;
+ALTER TABLE public.order_replies REPLICA IDENTITY FULL;

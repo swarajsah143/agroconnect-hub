@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNegotiations, Negotiation } from '@/hooks/useNegotiations';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent } from '@/components/ui/card';
@@ -15,12 +15,22 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import NegotiationChat from './NegotiationChat';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent } from '@/components/ui/sheet';
 
 const NegotiationsList = () => {
   const { negotiations, loading } = useNegotiations();
   const { user, profile } = useAuth();
   const [selectedNegotiation, setSelectedNegotiation] = useState<Negotiation | null>(null);
+  const [isDesktop, setIsDesktop] = useState(
+    typeof window !== 'undefined' ? window.matchMedia('(min-width: 1024px)').matches : true
+  );
+
+  useEffect(() => {
+    const mql = window.matchMedia('(min-width: 1024px)');
+    const handler = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
+    mql.addEventListener('change', handler);
+    return () => mql.removeEventListener('change', handler);
+  }, []);
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -141,31 +151,40 @@ const NegotiationsList = () => {
         </div>
       </ScrollArea>
 
-      {/* Chat panel - Desktop */}
-      <div className="hidden lg:block h-[600px]">
-        {selectedNegotiation ? (
-          <NegotiationChat 
-            negotiation={selectedNegotiation}
-            onClose={() => setSelectedNegotiation(null)}
-          />
-        ) : (
-          <div className="h-full flex items-center justify-center border border-dashed border-border rounded-lg">
-            <div className="text-center text-muted-foreground">
-              <MessageCircle className="w-10 h-10 mx-auto mb-3 opacity-50" />
-              <p>Select a negotiation to view chat</p>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Chat panel - Mobile Sheet */}
-      {selectedNegotiation && (
-        <Sheet open={!!selectedNegotiation} onOpenChange={() => setSelectedNegotiation(null)}>
-          <SheetContent side="right" className="w-full sm:max-w-lg p-0">
-            <NegotiationChat 
+      {/* Chat panel - Desktop only (>=1024px) */}
+      {isDesktop && (
+        <div className="h-[600px]">
+          {selectedNegotiation ? (
+            <NegotiationChat
+              key={selectedNegotiation.id}
               negotiation={selectedNegotiation}
               onClose={() => setSelectedNegotiation(null)}
             />
+          ) : (
+            <div className="h-full flex items-center justify-center border border-dashed border-border rounded-lg">
+              <div className="text-center text-muted-foreground">
+                <MessageCircle className="w-10 h-10 mx-auto mb-3 opacity-50" />
+                <p>Select a negotiation to view chat</p>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Chat panel - Mobile Sheet only (<1024px) */}
+      {!isDesktop && (
+        <Sheet
+          open={!!selectedNegotiation}
+          onOpenChange={(open) => { if (!open) setSelectedNegotiation(null); }}
+        >
+          <SheetContent side="right" className="w-full sm:max-w-lg p-0">
+            {selectedNegotiation && (
+              <NegotiationChat
+                key={selectedNegotiation.id}
+                negotiation={selectedNegotiation}
+                onClose={() => setSelectedNegotiation(null)}
+              />
+            )}
           </SheetContent>
         </Sheet>
       )}

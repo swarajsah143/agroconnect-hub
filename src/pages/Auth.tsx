@@ -452,6 +452,19 @@ const Auth = () => {
             </form>
           </Tabs>
 
+          {mode === 'login' && (
+            <div className="mt-3 text-center text-sm">
+              <button
+                type="button"
+                onClick={() => { resetForgotFlow(); setForgotEmail(email); setForgotOpen(true); }}
+                className="text-primary hover:underline inline-flex items-center gap-1"
+              >
+                <KeyRound className="w-3.5 h-3.5" />
+                Forgot password?
+              </button>
+            </div>
+          )}
+
           <div className="mt-4 text-center text-sm text-muted-foreground">
             <button
               type="button"
@@ -463,6 +476,73 @@ const Auth = () => {
           </div>
         </CardContent>
       </Card>
+
+      <Dialog open={forgotOpen} onOpenChange={(o) => { setForgotOpen(o); if (!o) resetForgotFlow(); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <KeyRound className="w-5 h-5 text-primary" />
+              Reset your password
+            </DialogTitle>
+            <DialogDescription>
+              {forgotStep === 'email'
+                ? "Enter your email and we'll send you a verification code."
+                : `We sent a 6-digit code to ${forgotEmail}.`}
+            </DialogDescription>
+          </DialogHeader>
+
+          {forgotStep === 'email' ? (
+            <div className="space-y-4 py-2">
+              <div className="space-y-2">
+                <Label>Email</Label>
+                <Input
+                  type="email"
+                  value={forgotEmail}
+                  onChange={(e) => setForgotEmail(e.target.value)}
+                  placeholder="you@example.com"
+                />
+              </div>
+              <Button className="w-full" onClick={handleSendForgotOtp} disabled={forgotBusy}>
+                {forgotBusy ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Sending...</> : 'Send code'}
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-4 py-2">
+              <div className="flex justify-center">
+                <InputOTP maxLength={6} value={forgotOtp} onChange={setForgotOtp}>
+                  <InputOTPGroup>
+                    <InputOTPSlot index={0} />
+                    <InputOTPSlot index={1} />
+                    <InputOTPSlot index={2} />
+                    <InputOTPSlot index={3} />
+                    <InputOTPSlot index={4} />
+                    <InputOTPSlot index={5} />
+                  </InputOTPGroup>
+                </InputOTP>
+              </div>
+              <div className="space-y-2">
+                <Label>New password</Label>
+                <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="At least 6 characters" />
+              </div>
+              <div className="space-y-2">
+                <Label>Confirm new password</Label>
+                <Input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Re-enter new password" />
+              </div>
+              <Button className="w-full" onClick={handleResetPassword} disabled={forgotBusy}>
+                {forgotBusy ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Updating...</> : 'Reset password'}
+              </Button>
+              <button
+                type="button"
+                onClick={handleSendForgotOtp}
+                disabled={forgotBusy}
+                className="w-full text-center text-sm text-primary hover:underline disabled:opacity-50"
+              >
+                Resend code
+              </button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

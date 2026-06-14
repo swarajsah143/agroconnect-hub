@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
 type RegistrationStep = 'form' | 'otp';
+type ForgotStep = 'email' | 'otp';
 
 const Auth = () => {
   const [searchParams] = useSearchParams();
@@ -31,6 +32,15 @@ const Auth = () => {
   const [otp, setOtp] = useState('');
   const [sendingOtp, setSendingOtp] = useState(false);
   const [verifyingOtp, setVerifyingOtp] = useState(false);
+
+  // Forgot-password flow
+  const [forgotOpen, setForgotOpen] = useState(false);
+  const [forgotStep, setForgotStep] = useState<ForgotStep>('email');
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotOtp, setForgotOtp] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [forgotBusy, setForgotBusy] = useState(false);
 
   const { login, register } = useAuth();
   const navigate = useNavigate();
@@ -116,40 +126,15 @@ const Auth = () => {
       return;
     }
 
-    // Only require OTP for the test email (Resend limitation)
-    const requiresOtp = email.toLowerCase() === 'swarajsah143@gmail.com';
-    
-    if (requiresOtp) {
-      const success = await sendOTP();
-      if (success) {
-        setRegistrationStep('otp');
-      }
-    } else {
-      // Skip OTP for other emails - register directly
-      setLoading(true);
-      try {
-        const result = await register(email, password, name, role);
-        if (result.success) {
-          toast({
-            title: 'Account created!',
-            description: 'Your account has been successfully created.',
-          });
-          const dashboardMap = {
-            farmer: '/farmer-dashboard',
-            buyer: '/buyer-dashboard',
-            expert: '/expert-dashboard'
-          };
-          navigate(dashboardMap[role]);
-        } else {
-          toast({
-            variant: 'destructive',
-            title: 'Registration failed',
-            description: result.error || 'Could not create account. Please try again.',
-          });
-        }
-      } finally {
-        setLoading(false);
-      }
+    if (password.length < 6) {
+      toast({ variant: 'destructive', title: 'Weak password', description: 'Password must be at least 6 characters.' });
+      return;
+    }
+
+    // Always require OTP verification for new registrations.
+    const success = await sendOTP();
+    if (success) {
+      setRegistrationStep('otp');
     }
   };
 

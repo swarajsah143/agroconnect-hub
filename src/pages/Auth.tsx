@@ -8,7 +8,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
-import { Sprout, Mail, ArrowLeft, Loader2 } from 'lucide-react';
+import { Sprout, Mail, ArrowLeft, Loader2, KeyRound } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -213,6 +214,72 @@ const Auth = () => {
   const handleBackToForm = () => {
     setRegistrationStep('form');
     setOtp('');
+  };
+
+  const resetForgotFlow = () => {
+    setForgotStep('email');
+    setForgotEmail('');
+    setForgotOtp('');
+    setNewPassword('');
+    setConfirmPassword('');
+  };
+
+  const handleSendForgotOtp = async () => {
+    if (!forgotEmail) {
+      toast({ variant: 'destructive', title: 'Email required' });
+      return;
+    }
+    setForgotBusy(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('send-otp', { body: { email: forgotEmail } });
+      if (error) throw error;
+      if (data?.error) {
+        toast({ variant: 'destructive', title: 'Error', description: data.error });
+        return;
+      }
+      toast({ title: 'Code sent', description: 'Check your email for the 6-digit code.' });
+      setForgotStep('otp');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to send code';
+      toast({ variant: 'destructive', title: 'Error', description: msg });
+    } finally {
+      setForgotBusy(false);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    if (forgotOtp.length !== 6) {
+      toast({ variant: 'destructive', title: 'Enter the 6-digit code' });
+      return;
+    }
+    if (newPassword.length < 6) {
+      toast({ variant: 'destructive', title: 'Password too short', description: 'Use at least 6 characters.' });
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast({ variant: 'destructive', title: 'Passwords do not match' });
+      return;
+    }
+    setForgotBusy(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('reset-password', {
+        body: { email: forgotEmail, otp: forgotOtp, newPassword },
+      });
+      if (error) throw error;
+      if (data?.error) {
+        toast({ variant: 'destructive', title: 'Reset failed', description: data.error });
+        return;
+      }
+      toast({ title: 'Password reset', description: 'You can now sign in with your new password.' });
+      setForgotOpen(false);
+      resetForgotFlow();
+      setEmail(forgotEmail);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Reset failed';
+      toast({ variant: 'destructive', title: 'Error', description: msg });
+    } finally {
+      setForgotBusy(false);
+    }
   };
 
   // OTP Verification Screen

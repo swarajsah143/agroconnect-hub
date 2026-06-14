@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { mockExpertPosts, mockQuestions, ExpertPost } from '@/data/mockData';
 import { Plus, ThumbsUp, MessageSquare, BookOpen } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import ProfileCard from '@/components/ProfileCard';
 
 const ExpertDashboard = () => {
   const { user, profile, loading } = useAuth();
@@ -82,6 +83,10 @@ const ExpertDashboard = () => {
       <Navbar />
 
       <div className="container mx-auto px-4 py-8">
+        <div className="mb-8">
+          <ProfileCard />
+        </div>
+
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-4xl font-serif font-bold mb-2">Expert Dashboard</h1>

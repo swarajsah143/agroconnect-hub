@@ -11,6 +11,7 @@ import { useAllUnifiedCrops } from '@/hooks/useUnifiedCrops';
 import CropImage from '@/components/CropImage';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
+import ProfileCard from '@/components/ProfileCard';
 
 const BuyerDashboard = () => {
   const { user, profile, loading } = useAuth();
@@ -51,8 +52,7 @@ const BuyerDashboard = () => {
 
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
-          <h1 className="text-4xl font-serif font-bold mb-2">Buyer Dashboard</h1>
-          <p className="text-muted-foreground">Welcome back, {profile?.name}!</p>
+          <ProfileCard />
         </div>
 
         {/* Stats */}

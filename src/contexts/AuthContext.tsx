@@ -9,12 +9,16 @@ export interface UserProfile {
   user_id: string;
   name: string;
   role: UserRole;
+  avatar_url?: string | null;
+  phone?: string | null;
+  bio?: string | null;
 }
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   profile: UserProfile | null;
+  refreshProfile: () => Promise<void>;
   login: (email: string, password: string, role: UserRole) => Promise<{ success: boolean; error?: string }>;
   register: (email: string, password: string, name: string, role: UserRole) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
@@ -181,11 +185,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setProfile(null);
   };
 
+  const refreshProfile = async () => {
+    if (!user) return;
+    await loadProfile(user.id);
+  };
+
   return (
     <AuthContext.Provider value={{ 
       user, 
       session,
       profile,
+      refreshProfile,
       login, 
       register, 
       logout, 

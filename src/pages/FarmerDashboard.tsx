@@ -20,6 +20,7 @@ import { useFarmerUnifiedCrops, UnifiedCrop } from '@/hooks/useUnifiedCrops';
 import { getCropImage } from '@/utils/cropImages';
 import CropImage from '@/components/CropImage';
 import { Badge } from '@/components/ui/badge';
+import ProfileCard from '@/components/ProfileCard';
 
 const FarmerDashboard = () => {
   const { user, profile, loading } = useAuth();
@@ -141,6 +142,10 @@ const FarmerDashboard = () => {
       <Navbar />
 
       <div className="container mx-auto px-4 py-8">
+        <div className="mb-8">
+          <ProfileCard />
+        </div>
+
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-4xl font-serif font-bold mb-2">Farmer Dashboard</h1>

@@ -8,11 +8,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
-import { Sprout, Mail, ArrowLeft, Loader2 } from 'lucide-react';
+import { Sprout, Mail, ArrowLeft, Loader2, KeyRound } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
 type RegistrationStep = 'form' | 'otp';
+type ForgotStep = 'email' | 'otp';
 
 const Auth = () => {
   const [searchParams] = useSearchParams();
@@ -31,6 +33,15 @@ const Auth = () => {
   const [otp, setOtp] = useState('');
   const [sendingOtp, setSendingOtp] = useState(false);
   const [verifyingOtp, setVerifyingOtp] = useState(false);
+
+  // Forgot-password flow
+  const [forgotOpen, setForgotOpen] = useState(false);
+  const [forgotStep, setForgotStep] = useState<ForgotStep>('email');
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotOtp, setForgotOtp] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [forgotBusy, setForgotBusy] = useState(false);
 
   const { login, register } = useAuth();
   const navigate = useNavigate();
@@ -116,40 +127,15 @@ const Auth = () => {
       return;
     }
 
-    // Only require OTP for the test email (Resend limitation)
-    const requiresOtp = email.toLowerCase() === 'swarajsah143@gmail.com';
-    
-    if (requiresOtp) {
-      const success = await sendOTP();
-      if (success) {
-        setRegistrationStep('otp');
-      }
-    } else {
-      // Skip OTP for other emails - register directly
-      setLoading(true);
-      try {
-        const result = await register(email, password, name, role);
-        if (result.success) {
-          toast({
-            title: 'Account created!',
-            description: 'Your account has been successfully created.',
-          });
-          const dashboardMap = {
-            farmer: '/farmer-dashboard',
-            buyer: '/buyer-dashboard',
-            expert: '/expert-dashboard'
-          };
-          navigate(dashboardMap[role]);
-        } else {
-          toast({
-            variant: 'destructive',
-            title: 'Registration failed',
-            description: result.error || 'Could not create account. Please try again.',
-          });
-        }
-      } finally {
-        setLoading(false);
-      }
+    if (password.length < 6) {
+      toast({ variant: 'destructive', title: 'Weak password', description: 'Password must be at least 6 characters.' });
+      return;
+    }
+
+    // Always require OTP verification for new registrations.
+    const success = await sendOTP();
+    if (success) {
+      setRegistrationStep('otp');
     }
   };
 
@@ -228,6 +214,72 @@ const Auth = () => {
   const handleBackToForm = () => {
     setRegistrationStep('form');
     setOtp('');
+  };
+
+  const resetForgotFlow = () => {
+    setForgotStep('email');
+    setForgotEmail('');
+    setForgotOtp('');
+    setNewPassword('');
+    setConfirmPassword('');
+  };
+
+  const handleSendForgotOtp = async () => {
+    if (!forgotEmail) {
+      toast({ variant: 'destructive', title: 'Email required' });
+      return;
+    }
+    setForgotBusy(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('send-otp', { body: { email: forgotEmail } });
+      if (error) throw error;
+      if (data?.error) {
+        toast({ variant: 'destructive', title: 'Error', description: data.error });
+        return;
+      }
+      toast({ title: 'Code sent', description: 'Check your email for the 6-digit code.' });
+      setForgotStep('otp');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to send code';
+      toast({ variant: 'destructive', title: 'Error', description: msg });
+    } finally {
+      setForgotBusy(false);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    if (forgotOtp.length !== 6) {
+      toast({ variant: 'destructive', title: 'Enter the 6-digit code' });
+      return;
+    }
+    if (newPassword.length < 6) {
+      toast({ variant: 'destructive', title: 'Password too short', description: 'Use at least 6 characters.' });
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast({ variant: 'destructive', title: 'Passwords do not match' });
+      return;
+    }
+    setForgotBusy(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('reset-password', {
+        body: { email: forgotEmail, otp: forgotOtp, newPassword },
+      });
+      if (error) throw error;
+      if (data?.error) {
+        toast({ variant: 'destructive', title: 'Reset failed', description: data.error });
+        return;
+      }
+      toast({ title: 'Password reset', description: 'You can now sign in with your new password.' });
+      setForgotOpen(false);
+      resetForgotFlow();
+      setEmail(forgotEmail);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Reset failed';
+      toast({ variant: 'destructive', title: 'Error', description: msg });
+    } finally {
+      setForgotBusy(false);
+    }
   };
 
   // OTP Verification Screen
@@ -400,6 +452,19 @@ const Auth = () => {
             </form>
           </Tabs>
 
+          {mode === 'login' && (
+            <div className="mt-3 text-center text-sm">
+              <button
+                type="button"
+                onClick={() => { resetForgotFlow(); setForgotEmail(email); setForgotOpen(true); }}
+                className="text-primary hover:underline inline-flex items-center gap-1"
+              >
+                <KeyRound className="w-3.5 h-3.5" />
+                Forgot password?
+              </button>
+            </div>
+          )}
+
           <div className="mt-4 text-center text-sm text-muted-foreground">
             <button
               type="button"
@@ -411,6 +476,73 @@ const Auth = () => {
           </div>
         </CardContent>
       </Card>
+
+      <Dialog open={forgotOpen} onOpenChange={(o) => { setForgotOpen(o); if (!o) resetForgotFlow(); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <KeyRound className="w-5 h-5 text-primary" />
+              Reset your password
+            </DialogTitle>
+            <DialogDescription>
+              {forgotStep === 'email'
+                ? "Enter your email and we'll send you a verification code."
+                : `We sent a 6-digit code to ${forgotEmail}.`}
+            </DialogDescription>
+          </DialogHeader>
+
+          {forgotStep === 'email' ? (
+            <div className="space-y-4 py-2">
+              <div className="space-y-2">
+                <Label>Email</Label>
+                <Input
+                  type="email"
+                  value={forgotEmail}
+                  onChange={(e) => setForgotEmail(e.target.value)}
+                  placeholder="you@example.com"
+                />
+              </div>
+              <Button className="w-full" onClick={handleSendForgotOtp} disabled={forgotBusy}>
+                {forgotBusy ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Sending...</> : 'Send code'}
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-4 py-2">
+              <div className="flex justify-center">
+                <InputOTP maxLength={6} value={forgotOtp} onChange={setForgotOtp}>
+                  <InputOTPGroup>
+                    <InputOTPSlot index={0} />
+                    <InputOTPSlot index={1} />
+                    <InputOTPSlot index={2} />
+                    <InputOTPSlot index={3} />
+                    <InputOTPSlot index={4} />
+                    <InputOTPSlot index={5} />
+                  </InputOTPGroup>
+                </InputOTP>
+              </div>
+              <div className="space-y-2">
+                <Label>New password</Label>
+                <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="At least 6 characters" />
+              </div>
+              <div className="space-y-2">
+                <Label>Confirm new password</Label>
+                <Input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Re-enter new password" />
+              </div>
+              <Button className="w-full" onClick={handleResetPassword} disabled={forgotBusy}>
+                {forgotBusy ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Updating...</> : 'Reset password'}
+              </Button>
+              <button
+                type="button"
+                onClick={handleSendForgotOtp}
+                disabled={forgotBusy}
+                className="w-full text-center text-sm text-primary hover:underline disabled:opacity-50"
+              >
+                Resend code
+              </button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

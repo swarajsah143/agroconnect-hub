@@ -7,357 +7,66 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
-import { Sprout, Mail, ArrowLeft, Loader2, KeyRound } from 'lucide-react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Sprout, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
-
-type RegistrationStep = 'form' | 'otp';
-type ForgotStep = 'email' | 'otp';
 
 const Auth = () => {
   const [searchParams] = useSearchParams();
   const defaultMode = searchParams.get('mode') === 'register' ? 'register' : 'login';
   const defaultRole = (searchParams.get('role') as UserRole) || 'farmer';
-  
+
   const [mode, setMode] = useState<'login' | 'register'>(defaultMode);
   const [role, setRole] = useState<UserRole>(defaultRole);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
-  
-  // OTP states
-  const [registrationStep, setRegistrationStep] = useState<RegistrationStep>('form');
-  const [otp, setOtp] = useState('');
-  const [sendingOtp, setSendingOtp] = useState(false);
-  const [verifyingOtp, setVerifyingOtp] = useState(false);
-
-  // Forgot-password flow
-  const [forgotOpen, setForgotOpen] = useState(false);
-  const [forgotStep, setForgotStep] = useState<ForgotStep>('email');
-  const [forgotEmail, setForgotEmail] = useState('');
-  const [forgotOtp, setForgotOtp] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [forgotBusy, setForgotBusy] = useState(false);
 
   const { login, register } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const sendOTP = async () => {
-    setSendingOtp(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('send-otp', {
-        body: { email },
-      });
+  const dashboardMap = {
+    farmer: '/farmer-dashboard',
+    buyer: '/buyer-dashboard',
+    expert: '/expert-dashboard',
+  } as const;
 
-      if (error) throw error;
-
-      if (data.error) {
-        toast({
-          variant: 'destructive',
-          title: 'Error',
-          description: data.error,
-        });
-        return false;
-      }
-
-      toast({
-        title: 'OTP Sent!',
-        description: 'Check your email for the verification code.',
-      });
-      return true;
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to send OTP';
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: errorMessage,
-      });
-      return false;
-    } finally {
-      setSendingOtp(false);
-    }
-  };
-
-  const verifyOTP = async (): Promise<boolean> => {
-    setVerifyingOtp(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('verify-otp', {
-        body: { email, otp },
-      });
-
-      if (error) throw error;
-
-      if (data.error) {
-        toast({
-          variant: 'destructive',
-          title: 'Verification Failed',
-          description: data.error,
-        });
-        return false;
-      }
-
-      return true;
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to verify OTP';
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: errorMessage,
-      });
-      return false;
-    } finally {
-      setVerifyingOtp(false);
-    }
-  };
-
-  const handleRegistrationFormSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!email || !password || !name) {
-      toast({
-        variant: 'destructive',
-        title: 'Missing Fields',
-        description: 'Please fill in all fields.',
-      });
+
+    if (mode === 'register' && (!name || !email || !password)) {
+      toast({ variant: 'destructive', title: 'Missing Fields', description: 'Please fill in all fields.' });
       return;
     }
-
-    if (password.length < 6) {
+    if (mode === 'register' && password.length < 6) {
       toast({ variant: 'destructive', title: 'Weak password', description: 'Password must be at least 6 characters.' });
       return;
     }
 
-    // Always require OTP verification for new registrations.
-    const success = await sendOTP();
-    if (success) {
-      setRegistrationStep('otp');
-    }
-  };
-
-  const handleOtpVerifyAndRegister = async () => {
-    if (otp.length !== 6) {
-      toast({
-        variant: 'destructive',
-        title: 'Invalid OTP',
-        description: 'Please enter the 6-digit code.',
-      });
-      return;
-    }
-
-    const verified = await verifyOTP();
-    if (!verified) return;
-
     setLoading(true);
     try {
-      const result = await register(email, password, name, role);
+      const result = mode === 'login'
+        ? await login(email, password, role)
+        : await register(email, password, name, role);
+
       if (result.success) {
         toast({
-          title: 'Account created!',
-          description: 'Your account has been successfully created.',
+          title: mode === 'login' ? 'Welcome back!' : 'Account created!',
+          description: mode === 'login' ? 'You have successfully logged in.' : 'Your account has been created.',
         });
-        const dashboardMap = {
-          farmer: '/farmer-dashboard',
-          buyer: '/buyer-dashboard',
-          expert: '/expert-dashboard'
-        };
         navigate(dashboardMap[role]);
       } else {
         toast({
           variant: 'destructive',
-          title: 'Registration failed',
-          description: result.error || 'Could not create account. Please try again.',
+          title: mode === 'login' ? 'Login failed' : 'Registration failed',
+          description: result.error || 'Please try again.',
         });
       }
     } finally {
       setLoading(false);
     }
   };
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-
-    try {
-      const result = await login(email, password, role);
-      if (result.success) {
-        toast({
-          title: 'Welcome back!',
-          description: 'You have successfully logged in.',
-        });
-        const dashboardMap = {
-          farmer: '/farmer-dashboard',
-          buyer: '/buyer-dashboard',
-          expert: '/expert-dashboard'
-        };
-        navigate(dashboardMap[role]);
-      } else {
-        toast({
-          variant: 'destructive',
-          title: 'Login failed',
-          description: result.error || 'Invalid credentials. Please try again.',
-        });
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleResendOtp = async () => {
-    await sendOTP();
-  };
-
-  const handleBackToForm = () => {
-    setRegistrationStep('form');
-    setOtp('');
-  };
-
-  const resetForgotFlow = () => {
-    setForgotStep('email');
-    setForgotEmail('');
-    setForgotOtp('');
-    setNewPassword('');
-    setConfirmPassword('');
-  };
-
-  const handleSendForgotOtp = async () => {
-    if (!forgotEmail) {
-      toast({ variant: 'destructive', title: 'Email required' });
-      return;
-    }
-    setForgotBusy(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('send-otp', { body: { email: forgotEmail } });
-      if (error) throw error;
-      if (data?.error) {
-        toast({ variant: 'destructive', title: 'Error', description: data.error });
-        return;
-      }
-      toast({ title: 'Code sent', description: 'Check your email for the 6-digit code.' });
-      setForgotStep('otp');
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to send code';
-      toast({ variant: 'destructive', title: 'Error', description: msg });
-    } finally {
-      setForgotBusy(false);
-    }
-  };
-
-  const handleResetPassword = async () => {
-    if (forgotOtp.length !== 6) {
-      toast({ variant: 'destructive', title: 'Enter the 6-digit code' });
-      return;
-    }
-    if (newPassword.length < 6) {
-      toast({ variant: 'destructive', title: 'Password too short', description: 'Use at least 6 characters.' });
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      toast({ variant: 'destructive', title: 'Passwords do not match' });
-      return;
-    }
-    setForgotBusy(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('reset-password', {
-        body: { email: forgotEmail, otp: forgotOtp, newPassword },
-      });
-      if (error) throw error;
-      if (data?.error) {
-        toast({ variant: 'destructive', title: 'Reset failed', description: data.error });
-        return;
-      }
-      toast({ title: 'Password reset', description: 'You can now sign in with your new password.' });
-      setForgotOpen(false);
-      resetForgotFlow();
-      setEmail(forgotEmail);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Reset failed';
-      toast({ variant: 'destructive', title: 'Error', description: msg });
-    } finally {
-      setForgotBusy(false);
-    }
-  };
-
-  // OTP Verification Screen
-  if (mode === 'register' && registrationStep === 'otp') {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-accent/5 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader className="space-y-1 text-center">
-            <div className="flex justify-center mb-4">
-              <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-                <Mail className="w-6 h-6 text-primary" />
-              </div>
-            </div>
-            <CardTitle className="text-2xl font-serif">Verify Your Email</CardTitle>
-            <CardDescription>
-              We've sent a 6-digit code to <strong>{email}</strong>
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="flex justify-center">
-              <InputOTP
-                maxLength={6}
-                value={otp}
-                onChange={(value) => setOtp(value)}
-              >
-                <InputOTPGroup>
-                  <InputOTPSlot index={0} />
-                  <InputOTPSlot index={1} />
-                  <InputOTPSlot index={2} />
-                  <InputOTPSlot index={3} />
-                  <InputOTPSlot index={4} />
-                  <InputOTPSlot index={5} />
-                </InputOTPGroup>
-              </InputOTP>
-            </div>
-
-            <p className="text-center text-sm text-muted-foreground">
-              Code expires in 5 minutes
-            </p>
-
-            <Button 
-              className="w-full" 
-              onClick={handleOtpVerifyAndRegister}
-              disabled={verifyingOtp || loading || otp.length !== 6}
-            >
-              {(verifyingOtp || loading) ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {verifyingOtp ? 'Verifying...' : 'Creating Account...'}
-                </>
-              ) : (
-                'Verify & Create Account'
-              )}
-            </Button>
-
-            <div className="flex flex-col gap-2 text-center text-sm">
-              <button
-                type="button"
-                onClick={handleResendOtp}
-                disabled={sendingOtp}
-                className="text-primary hover:underline disabled:opacity-50"
-              >
-                {sendingOtp ? 'Sending...' : "Didn't receive code? Resend"}
-              </button>
-              <button
-                type="button"
-                onClick={handleBackToForm}
-                className="text-muted-foreground hover:text-foreground flex items-center justify-center gap-1"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                Back to registration
-              </button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-accent/5 flex items-center justify-center p-4">
@@ -380,7 +89,7 @@ const Auth = () => {
               <TabsTrigger value="register">Register</TabsTrigger>
             </TabsList>
 
-            <form onSubmit={mode === 'login' ? handleLogin : handleRegistrationFormSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="role">I am a</Label>
                 <Select value={role} onValueChange={(v) => setRole(v as UserRole)}>
@@ -398,151 +107,38 @@ const Auth = () => {
               {mode === 'register' && (
                 <div className="space-y-2">
                   <Label htmlFor="name">Full Name</Label>
-                  <Input
-                    id="name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    required
-                    placeholder="Enter your full name"
-                  />
+                  <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required placeholder="Enter your full name" />
                 </div>
               )}
 
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  placeholder="Enter your email"
-                />
+                <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="Enter your email" />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  placeholder="Enter your password"
-                />
+                <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required placeholder="Enter your password" />
               </div>
 
-              <Button type="submit" className="w-full" disabled={loading || sendingOtp}>
+              <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Please wait...
                   </>
-                ) : sendingOtp ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Sending OTP...
-                  </>
-                ) : mode === 'login' ? (
-                  'Sign In'
-                ) : (
-                  'Continue'
-                )}
+                ) : mode === 'login' ? 'Sign In' : 'Create Account'}
               </Button>
             </form>
           </Tabs>
 
-          {mode === 'login' && (
-            <div className="mt-3 text-center text-sm">
-              <button
-                type="button"
-                onClick={() => { resetForgotFlow(); setForgotEmail(email); setForgotOpen(true); }}
-                className="text-primary hover:underline inline-flex items-center gap-1"
-              >
-                <KeyRound className="w-3.5 h-3.5" />
-                Forgot password?
-              </button>
-            </div>
-          )}
-
           <div className="mt-4 text-center text-sm text-muted-foreground">
-            <button
-              type="button"
-              onClick={() => navigate('/')}
-              className="text-primary hover:underline"
-            >
+            <button type="button" onClick={() => navigate('/')} className="text-primary hover:underline">
               Back to Home
             </button>
           </div>
         </CardContent>
       </Card>
-
-      <Dialog open={forgotOpen} onOpenChange={(o) => { setForgotOpen(o); if (!o) resetForgotFlow(); }}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <KeyRound className="w-5 h-5 text-primary" />
-              Reset your password
-            </DialogTitle>
-            <DialogDescription>
-              {forgotStep === 'email'
-                ? "Enter your email and we'll send you a verification code."
-                : `We sent a 6-digit code to ${forgotEmail}.`}
-            </DialogDescription>
-          </DialogHeader>
-
-          {forgotStep === 'email' ? (
-            <div className="space-y-4 py-2">
-              <div className="space-y-2">
-                <Label>Email</Label>
-                <Input
-                  type="email"
-                  value={forgotEmail}
-                  onChange={(e) => setForgotEmail(e.target.value)}
-                  placeholder="you@example.com"
-                />
-              </div>
-              <Button className="w-full" onClick={handleSendForgotOtp} disabled={forgotBusy}>
-                {forgotBusy ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Sending...</> : 'Send code'}
-              </Button>
-            </div>
-          ) : (
-            <div className="space-y-4 py-2">
-              <div className="flex justify-center">
-                <InputOTP maxLength={6} value={forgotOtp} onChange={setForgotOtp}>
-                  <InputOTPGroup>
-                    <InputOTPSlot index={0} />
-                    <InputOTPSlot index={1} />
-                    <InputOTPSlot index={2} />
-                    <InputOTPSlot index={3} />
-                    <InputOTPSlot index={4} />
-                    <InputOTPSlot index={5} />
-                  </InputOTPGroup>
-                </InputOTP>
-              </div>
-              <div className="space-y-2">
-                <Label>New password</Label>
-                <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="At least 6 characters" />
-              </div>
-              <div className="space-y-2">
-                <Label>Confirm new password</Label>
-                <Input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Re-enter new password" />
-              </div>
-              <Button className="w-full" onClick={handleResetPassword} disabled={forgotBusy}>
-                {forgotBusy ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Updating...</> : 'Reset password'}
-              </Button>
-              <button
-                type="button"
-                onClick={handleSendForgotOtp}
-                disabled={forgotBusy}
-                className="w-full text-center text-sm text-primary hover:underline disabled:opacity-50"
-              >
-                Resend code
-              </button>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
